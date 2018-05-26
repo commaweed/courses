@@ -1,0 +1,184 @@
+/* ====================================================== */
+/* main / plans */
+/* ====================================================== */
+
+.section-title {
+    color: #2ddf5c;
+    text-align: center;
+}
+
+#product-overview {
+    /* background: url("./images/freedom.jpg"); */
+
+    /* background-image: url("./images/freedom.jpg");
+    background-color: red; */
+
+    background-image: url("./images/freedom.jpg");
+
+    /* background-repeat: no-repeat; */
+
+    /* background-size: auto 100%; auto will keep the aspect ratio */
+    /* background-size: cover; finds out which part of width/height is important */
+    /* background-size: contain;  ensures full image is visible in container */
+
+    /* background-position: 20px 50px; first value = x-axis, 2nd = y-axis */
+    /* background-position: center; means 50% 50% - equal cropping on all sides */
+    /* background-position: left top; no cropping on left or top = 0% 0% */
+    /* background-position: left 10% bottom 20%; crop 10% from left, 20% from bottom */
+    /* background-position: 0% 80%; default is 50% - 50% cropped at top and bottom; 10% means less is cropped at top */
+
+    /* border: 5px dashed red; just used to demonstrate origin and clip */
+
+    /* background-origin: padding-box; default - includes content and padding, but not border */
+    /* background-origin: content-box; content without border and padding */
+    /* background-origin: border-box; defines the container for our background property */
+
+    /* background-clip can override background-origin */
+    /* background-clip: border-box; same affect as background-origin; clipped after content and padding */
+    /* background-clip: padding-box; clipped after padding */
+    /* background-clip: content-box; clipped before the padding; affects the width */
+
+
+    /* position:fixed won't work, need something like relative for background-attachment */
+    /* background-attachment: local; scrolls with the content */
+    /* background-attachment: scroll; images stays, content scrolls */
+    /* background-attachment: fixed; image is fixed to the viewport */
+
+    /* short hand for all the above - color is fallback in case image doesn't load */
+    /* also stacking image backgrounds, separated by comma */
+    background: linear-gradient(to top, rgba(80, 68, 18, 0.6) 10%, transparent),
+         url("./images/freedom.jpg") left 10% bottom 20%/cover no-repeat border-box,
+           #ff1b68;
+
+    /* linear gradient acts as an image */
+    /* first arg can be a color, but normally it is a direction */
+    /* background-image: linear-gradient(to left bottom ,red, blue); */
+    /* background-image: linear-gradient(30deg ,red, blue); */
+    /* background-image: linear-gradient(0deg ,red, blue); red starts at bottom; 180 start at top */
+    /* background-image: linear-gradient(0deg ,red, blue, yellow, green, #ff923f); */
+    /* background-image: linear-gradient(180deg ,red, transparent);  */
+    /* background-image: linear-gradient(180deg ,red, rgba(0, 0, 0, 0.25)); */
+    /* background-image: linear-gradient(180deg ,red 80%, blue 80%, rgba(0, 0, 0, 0.25)); no smooth transition */
+
+    /* radial gradient acts as an image - starts at a certain shape */
+    /* background-image: radial-gradient(green,red, blue); ellipse */
+    /* background-image: radial-gradient(circle, green,red, blue); circle */
+    /* background-image: radial-gradient(circle at top left, green,red, blue); center top left  */
+    /* background-image: radial-gradient(circle 20px at 20% 50%, green,red, blue); define size, only circle */
+
+    width: 100%;
+    height: 528px;
+    padding: 10px;
+    margin-top: 43px;
+    position: relative;
+}
+
+#product-overview h1 {
+    color: white;
+    font-family: 'Anton', sans-serif;
+    position: absolute;
+    bottom: 5%;
+    left: 3%;
+}
+
+.plan__list {
+    width: 80%;
+    margin: auto; /* will auto center the plans */
+    text-align: center; /* will center the inline-block elements */
+}
+
+.plan {
+    background: #d5ffdc;
+    text-align: center;
+    padding: 16px;
+    margin: 8px;
+    display: inline-block;
+    width: 30%;
+    vertical-align: middle;
+
+}
+
+.plan--highlighted {
+    background: #19b84c;
+    color: #fff;
+    box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.5);
+}
+
+.plan__annotation {
+    background: white;
+    color: #19b84c;
+    padding: 8px;
+    box-shadow: 2px 2px 2px 2px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+}
+
+.plan__features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.plan__feature {
+    margin: 8px 0;
+}
+
+.plan__title {
+    color: #0e4f1f;
+}
+.plan--highlighted .plan__title {
+    color: white;
+}
+
+.plan__price {
+    color: rgb(136, 136, 136)
+}
+
+.plan--highlighted .plan__price {
+    color: #0e4f1f;
+}
+
+/* ====================================================== */
+/* Section: key-features */
+/* ====================================================== */
+
+#key-features {
+    background: #ff1b68;
+    margin-top: 80px;
+    padding: 16px;
+}
+
+#key-features > .section-title {
+    color: white;
+    margin: 32px;
+}
+
+.key-features__features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+.key-features__feature {
+    display: inline-block;
+    width: 30%;
+    vertical-align: top;
+}
+
+.key-features__image {
+    background: #ffcede;
+    width: 128px;
+    height: 128px;
+    border: 2px solid #424242;
+    border-radius: 50%;
+    margin: 0 auto; /* auto will fill the space to center it equally */
+    padding: 20px; /* you cannot select svg elements with css */
+}
+
+.key-feature__description {
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    font-size: 20px;
+}
+

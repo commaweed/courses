@@ -1,0 +1,202 @@
+https://plnkr.co/edit/GczH9qrLZWyA4Zzt37On?p=preview
+
+index.html
+
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <!--<link href="style.css" rel="stylesheet" />-->
+  </head>
+
+  <body ng-app="tjApp">
+
+    <div ng-controller="tjController">
+
+        <!-- ng-repeat uses tjController scope -->
+        <h3>Demonstrating ng-repeat (not using a directive)</h3>
+        <ul ng-repeat="person in results">
+          <li>
+            row: {{ person.id }}&nbsp;{{ person.name }}
+          </li>
+        </ul>
+
+        <!-- my directive uses tjController scope (contains same code as above) -->
+        <div tj-typeahead people="results"></div>
+    </div>
+
+    <!-- placing jquery script above angular means angular gets full JQuery versus JQlite -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- my scripts: order matters -->
+    <script src="module-tj-app.js"></script>
+    <script src="factory-tj-app.js"></script>
+    <script src="controller-tj-app.js"></script>
+    <script src="directive-tj-typeahead.js"></script>
+
+  </body>
+
+</html>
+
+module-tj-app.js
+
+/**
+ * The type-ahead combobox will only have one module and it will be the main
+ * application (i.e. ng-app).
+ */
+(function () {
+  'use strict';
+
+    // create the main angular application module
+    // since it has two parameters, it creates the module; one parameter returns a handle to it
+    // the second parameter is the dependencies, etc.
+    angular.module('tjApp', [ ]);
+
+})();
+
+controller-tj-app.js
+
+/**
+ * Represents the controller for my simple angular solution.  It will fetch data from
+ * the factory. 
+ */
+(function () {
+  'use strict';
+
+  // get a handle to the app module
+  var tjApp = angular.module('tjApp');
+
+  // add a controller to it
+  var tjAppController = tjApp.controller('tjController', [
+    '$scope',     // inject the scope
+    'tjFactory',  // inject the factory
+    function($scope, tjFactory) {
+
+      // The factory.getResults() returns a promise - set scope data once it returns
+      // it is asynchronous so we need to ensure the scope variable is in the callback
+      tjFactory.getResults().success(function(response) {
+        $scope.results = response;  
+      });
+
+    }
+  ]);
+
+})();
+
+factory-tj-app.js
+
+/**
+ * Represents a factory to demonstrate fetching data from a local file.  Angular
+ * has factory, service, and provider; each differ in how they are created.
+ * factory - standard javascript factory
+ * service - create with new function().  But it is a singleton.
+ * provider - special $get
+ */
+(function () {
+  'use strict';
+
+  // get a handle to the ng-app
+  var tjApp = angular.module('tjApp');
+
+  // add a factory
+  var tjAppFactory = tjApp.factory('tjFactory', [
+    '$http',
+    function($http) {
+      return {
+
+        // return the promise that will be the result of fetching the json from the local file
+        // we want to makesure we return the promise and not implement callbacks here so that
+        // the scope values can be updated in the success callback
+        getResults: function() {
+          return $http({
+            method: "GET",
+            url: "results.json",
+            cache: true
+          });
+
+        }
+      };
+    }
+  ]);
+
+})();
+
+results.json
+
+[
+  { "id": 1, "name": "Travis" },
+  { "id": 2, "name": "Amy" },
+  { "id": 3, "name": "Joshua" },
+  { "id": 4, "name": "Abigail" },
+  { "id": 5, "name": "Katie" },
+  { "id": 6, "name": "Alexis" },
+  { "id": 7, "name": "Madison" }
+]
+
+directive-tj-typeahead.js
+
+/**
+ * Represents my home-grown directive (as an attribute - alternatively, I could
+ * have used restrict: 'E' to make it an element instead).
+ */
+(function () {
+  'use strict';
+
+    // get a handle to the app
+    var tjApp = angular.module('tjApp');
+
+    tjApp.directive('tjTypeahead', function() {
+      return {
+        // only allow this directive to be an attribute
+        restrict: 'A', 
+
+        // the html that will be inserted into th DOM
+        templateUrl: 'tj-typeahead-template.html', 
+
+        // isolate the scope to this directive
+        // Isolated scope does not prototypically inherit from the parent scope
+        // names on the left are internal scope names; names on the right are parent scope names 
+        // parent scope names are specified by the attribute names on the directive in the main html
+        // (e.g.) <div tj-typeahead dog="{{ dogvalue }}"></div> ==> dogType: '@dog'
+        // use internal scope names in the link function
+        scope: {
+          people: '=' // two-way data-bind with the people attribute (changes will be seen in parent)
+        },
+
+        /**
+         * Standard Directive function used to manipuate the DOM. Link function happens
+         * in the post-link phase (i.e after compile and pre-link - all children elements
+         * would have finished those phases first)
+         * @param {Object} scope Angular scope object.
+         * @param {Element} element The JQLite-wrapped element that this directive matches.
+         * @param {Object} attrsMap normalized attribute name:value pairs.
+         */
+        link: function(scope, element, attrsMap) {
+          // eventuanlly I will retrofit this to be a type ahead combobox
+          // The DOM manipulation code to display the results will go here and they 
+          // will act on the template DOM (element can use jquery methods)
+        }
+      };
+    });
+
+})();
+
+tj-typeahead-template.html
+
+<!-- template for tj-typeahead directive -->
+<div>
+  <h3>The directive template results</h3>
+
+  <!-- Even though this directive has tjController parent scope, because I 
+       declared an isolated scope for the directive, it will use those
+       variable names -->
+  <ul ng-repeat="person in people">
+    <li>
+      row: {{ person.id }}&nbsp;{{ person.name }}
+    </li>
+  </ul>
+</div>
+

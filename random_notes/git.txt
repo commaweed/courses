@@ -1,0 +1,79 @@
+git config --global user.name "TJ"
+git config --global user.email "xxxx@xxxx"
+git config --global core.editor vim
+git config --global credential.helper 'cache --timeout 7200'
+git config --list
+git --version
+
+[tjjenk2:~]$ cat .gitconfig
+[user]
+        name = xxxx 
+        email = xxxxxxx@xxxxx
+[push]
+        default = tracking
+[core]
+        editor = vim
+        repositoryformatversion = 0
+        filemode = true
+        bare = false
+        logallrefupdates = true
+        ignorecase = false
+        precomposeunicode = false
+		  autocrlf = input
+
+[alias]
+   oldll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate
+   ll = log --graph --oneline --color --pretty=format:'%C(yellow)%h%d%C(reset) %s %C(cyan)[%an, %ar]%C(reset)'
+   ch=log --name-status --oneline --pretty=format:'%C(yellow)%h%d%C(reset) %s
+
+# credentials file to git hub (i.e. remote repo)
+[tjjenk2:~]$ cat .git-credentials 
+https://xxxxx:xxxx%40xxx%21%40%23xxx@github.com
+
+# run the following to use your credentials (for 2 hours)
+git config credential.helper store
+
+# how to create a git project
+# first create new project on github
+echo "# react-password-demo" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git remote add origin https://github.com/commaweed/react-password-demo.git
+git push -u origin master
+
+# push an existing project
+git remote add origin https://github.com/commaweed/react-password-demo.git
+git push -u origin master
+
+# how to add a remote repo for an existing git project
+git remote add origin https://github.com/ElegantTS/fezzik.git
+git remote -v
+origin  https://github.com/ElegantTS/fezzik.git (fetch)
+origin  https://github.com/ElegantTS/fezzik.git (push)
+git remote set-url origin git@github.com:username/repo.git
+git config credential.helper store
+
+# how to install new git on centos
+https://www.digitalocean.com/community/tutorials/how-to-install-git-on-centos-7
+wget https://github.com/git/git/archive/v2.1.2.tar.gz -O git.tar.gz
+cd git-*
+make configure 
+./configure --with-expat --with-openssl --prefix=/usr/local
+# make sure you see the following in the output:
+#  45 checking for curl_global_init in -lcurl... yes
+#  46 checking for XML_ParserCreate in -lexpat... yes
+sudo make
+sudo make install
+#sudo make prefix=/usr/local/git all
+#sudo make prefix=/usr/local/git install
+git --version
+
+# push from existing repo to a new repo
+git remote rename origin upstream
+git remote add origin <url>
+git push -u origin master
+
+# remove .gitignore after commit
+git rm --cached /\*.iml
+

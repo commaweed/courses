@@ -1,0 +1,4 @@
+# add my user to the vboxsf group so I can access the shared drive /media/sf_tjjenk2_share
+usermod -a -G vboxsf tjjenk2
+getent group vboxsf <-- displays whether or not the above line worked
+--> then either logout or do sudo su - tjjenk2 for a new session for it to work

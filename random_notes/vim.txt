@@ -1,0 +1,5 @@
+# to make colors go away
+:nohl
+
+:set tw=120
+:set fo-=t # set text wrap off

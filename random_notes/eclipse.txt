@@ -1,0 +1,2 @@
+# add palantir typescript plugin
+update site: http://eclipse-update.palantir.com/eclipse-typescript/

@@ -1,0 +1,306 @@
+filter.fizzek.mongo.db.host=x.x.x.x
+filter.fizzek.mongo.db.port=
+filter.fizzek.mongo..name=fizzek
+filter.fizzek.mongo.user=
+filter.fizzek.mongo.pwd=
+
+filter.fizzek.ui.environment=PRODUCTION
+
+init.d tomcat
+
+# NOTE: this file was originally copied from $CATALINA_HOME/bin/daemon.sh
+
+# source function library
+. /etc/rc.d/init.d/functions
+
+TOMCAT_HOME=/tomcat
+TOMCAT_USER=$(stat -c "%U" $TOMCATHOME/conf/server.xml)
+CATALINA_HOME=$TOMCAT_HOME
+CATALINA_BASE=$TOMCAT_HOME
+JAVA_HOME=/java
+CATALINA_OUT="$CATALINA_BASE/logs/catalina-daemon.out"
+CATALINA_ERR="$CATALINA_BASE/logs/catalina-daemon.err"
+CATALINA_TMP="$CATALINA_BASE/temp"
+CATALINA_LOCK=/var/lock/subsys/apache-tomcat
+LOGGING_CONFIG="-Djava.util.logging.config.file=$CATALINA_BASE/conf/logging.properties"
+LOGGING_MANAGER="-Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager"
+JAVA_OPTS="$JAVA_OPTS $LOGGING_MANAGER"
+CATALINA_PID=/var/run/apache-tomcat/pid
+export CATALINA_PID
+
+if [ ! -d `dirname $CATALINA_PID` ]; then
+   mkdir -p `dirname $CATALINA_PID`
+fi
+if [ -n "$TOMCAT_USER" ]; then
+   chown -R $TOMCAT_USER `dirname $CATALINA_PID`
+fi
+
+# set vars from $TOMCAT_HOME/bin/setenv.sh
+if [ -f $TOMCAT_HOME/bin/setenv.sh ]; then
+   . "$TOMCAT_HOME/bin/setenv.sh"
+fi
+
+
+start() {
+   echo "Starting tomcat..."
+
+      "$JSVC" $* \
+      $JSVC_OPTS \
+      -java-home "$JAVA_HOME" \
+      -user $TOMCAT_USER \
+      -pidfile "$CATALINA_PID" \
+      wait "$SERVICE_START_WAIT_TIME" \
+      -outfile "&1" \
+      -errfile "&2" \
+      -classpath "$CLASSPATH" \
+      "$LOGGING_CONFIG" $JAVA_OPTS $CATALINA_OPTS  \
+      -Djava.endorsed.dirs="$JAVA_ENDORSED_DIRS" \
+      -Dcatalina.base="$CATALINA_BASE" \
+      -Dcatalina.home="$CATALINA_HOME" \
+      -Djava.io.tmpdir="$CATALINA_TMP" \
+      $CATALINA_MAIN
+
+      retval=$?
+   [ $retval -eq 0 ] && rm -f $lockfile && success || failure
+      echo
+   return $retval
+}
+
+stop() {
+   echo "Stopping tomcat..."
+
+      "$JSVC" $* \
+      $JSVC_OPTS \
+      -stop
+      -pidfile "$CATALINA_PID" \
+       -classpath "$CLASSPATH" \
+      -Djava.endorsed.dirs="$JAVA_ENDORSED_DIRS" \
+      -Dcatalina.base="$CATALINA_BASE" \
+      -Dcatalina.home="$CATALINA_HOME" \
+      -Djava.io.tmpdir="$CATALINA_TMP" \
+      $CATALINA_MAIN
+
+      retval=$?
+   [ $retval -eq 0 ] && rm -f $lockfile && success || failure
+      echo
+   return $retval  
+}
+
+status() {
+   if [[ -f $CATALINA_PID ]]; then
+      PID=$(cat $CATALINA_PID)
+      echo "Found tomcat PID [$PID], server is probably running!"
+      echo "Running ps -ef | grep $PID..."
+      ps -ef | grep $PID
+      echo "Running netstat -lpn | grep $PID..."
+      netstat -lpn | grep $PID
+   else
+      echo "No tomcat PID found; doesn't appear server is running!"
+   fi
+
+   retval=$?
+   [ $retval -eq 0 ] && success || failure
+      echo
+   return $retval
+}
+
+case "$1" in
+   run)
+      shift
+      "$JSVC" $* \
+      $JSVC_OPTS \
+      -java-home "$JAVA_HOME" \
+      -pidfile "$CATALINA_PID" \
+      wait "$SERVICE_START_WAIT_TIME" \
+      -nodetach \
+      -outfile "&1" \
+      -errfile "&2" \
+      -classpath "$CLASSPATH" \
+      "$LOGGING_CONFIG" $JAVA_OPTS $CATALINA_OPTS  \
+      -Djava.endorsed.dirs="$JAVA_ENDORSED_DIRS" \
+      -Dcatalina.base="$CATALINA_BASE" \
+      -Dcatalina.home="$CATALINA_HOME" \
+      -Djava.io.tmpdir="$CATALINA_TMP" \
+      $CATALINA_MAIN
+      exit $?
+   ;;
+   start)
+      start
+    ;;
+   stop)
+       stop
+    ;;
+    restart)
+       stop
+       sleep 3
+      start
+     ;;
+     status)
+       status
+     ;;
+     version)
+      "$JSVC" $* \
+      -java-home "$JAVA_HOME" \
+      -pidfile "$CATALINA_PID" \
+      -classpath "$CLASSPATH" \
+      -errfile "$CATALINA_ERR" \
+      -version
+      -check \
+      $CATALINA_MAIN
+  
+     if [ "?" = 0 ]; then
+         "$JAVA_BIN" \
+        -classpath "$CATALINA_HOME/lib/catalina.jar" \
+        org.apache.catalina.util.ServerInfo
+     fi
+     exit $?
+    ;;
+    *)
+    echo "Unknown command: \`$1'"
+    echo "Usage: $PROGRAM ( commands ... )"
+    echo "commands: run, start, stop, restart)
+    exit 1
+    ;;
+
+modify th e service symlink to point to the new initd file
+ln -sf /opt/tomcat/tomcat-initd.sh /etc/init.d/tomcat
+
+sudo service tomcat start
+sudo service tomcat status
+====================================================
+catalina.properties file
+
+common.loader=,${catalina.base}/tjjenk2_stuff/lib,${catalina.base}/tjjenk2_stuff/lib/*.jar,${catalina.base}/tjjenk2_stuff/properties
+
+can use \ too
+
+server.xml
+
+<connector port="8443"
+protocol="HTTP/1.1"
+SSLEnabled="true"
+maxThreads="150"
+scheme="https"
+secure="true"
+sslProtocol="TLS"
+clientAuth="true"
+truststoreType="JKS"
+truststoreFile="/home/tjjenk2/certs/blah.jks"
+truststorePass="xxx"
+keystoreType="JKS"
+keystoreFile=""
+keystorePass=""
+/>
+
+setenv.sh
+
+echo executing tj stuff...
+TJ_DIR="$CATALINE_BASE"/tj_stuff
+
+KEYSTORE_FILE=
+KEYSTORE_PWD=
+TRUSTSTORE_FILE=
+TRUSTSTORE_PWD=
+
+echo [tj] setting truststore [javax.net.ssl.trustStore=TRUSTSTORE_FILE]
+echo [tj] setting keystore [javax.net.ssl.keyStore=KEYSTORE_FILE]
+
+CATALINA_OPTS="$CATALINA_OPTS -Djavax.net.ssl.trustStore=TRUSTSTORE_FILE"
+CATALINA_OPTS="$CATALINA_OPTS -Djavax.net.ssl.trustStorePassword="
+CATALINA_OPTS="$CATALINA_OPTS -Djavax.net.ssl.keyStore="
+CATALINA_OPTS="$CATALINA_OPTS -Djavax.net.ssl.keyStorePassword="
+
+#CATALINA_OPTS="$CATALINA_OPTS -Djavax.net.debug=all"
+
+#LOG4J_PROPERTY_NAME=log4j.properties
+#LOG4J_PROPERTY_FILE="$TJ_DIR/properties/$LOG4J_PROPERTY_NAME"
+#CATALINA_OPTS="$CATALINA_OPTS -Dlog4j.configuration=file://LOG4J_PROPERTY_FILE"
+
+# remote debug 1.8
+REMOTE_DEBUG_PORT
+echo [tj] setting remote de...
+CATALINA_OPTS="$CATALINA_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$REMOTE_DEBUG_PORT"
+
+# for java 8
+CATALINA_OPTS="$CATALINA_OPTS -server"
+
+# memory
+CATALINA_OPTS="$CATALINA_OPTS -Xms256m -Xmx2048m"
+
+export CATALINA_OPTS
+
+tomcat-users.xml
+<role rolename="tomcat"/>
+<role rolename="manager"/>
+<role rolename="manager-gui"/>
+<role rolename="admin"/>
+<role rolename="admin-gui"/>
+<role rolename="users"/>
+
+<user username="CN=xxx" roles="tomcat,manager,manager-gui,admin,admin-gui"/>
+
+.vimrc
+
+syntax enable " enable syntax highlighting
+set tabstop=3 " number of visual spaces per tab
+set softtabstop=3 " number of spaces in tab when editing
+" set expandtab " tabs are spaces
+set number " show line numbers
+set showcmd " show command in bottom bar
+set cursorline " show cursor line
+set wildmenu "visual autocomplete for command menu
+set showmatch " enables highlighting of matching brackets
+set incsearch " search as characters are entered
+set hlsearch " highlight matches
+" set paste " and nopaste - allows pasting without comments being redone
+set textwidth=0 " column width (default 80) (0 means none)
+set nowrap " turn off line wrapping
+
+" turn off the search highlighting (mapping it to a \space)
+nnoremap <leader><space> :nohlsearch<CR>
+
+"set foldenable "enable folding
+"set foldlevelstart=10
+"set foldnestmax=10
+"nnoremap <space> za "space open/close folds
+"set foldmethod=indent " fold based on indent level
+
+" change the leader key (default is \)
+let mapleader=","
+
+" set default file type
+set filetype=conf
+
+" set txt files to conf to get the syntax highlighting
+autocmd BufEnter * if &filetype == "text" | setlocal filetype=conf | endif
+
+" set colors for matching brackets
+let g:loaded_matchparen=1
+
+.gitconfig
+
+[user]
+   name = TJ
+   email = blah@blah.com
+[push]
+   default = tracking
+[core]
+   autocrlf = input
+[alias]
+   ll = log --graph --oneline --color --pretty=format:'%C(yellow)%h%d%C(reset) %s %C(cyan)[%an, %ar]%C(reset)'
+   ch=log --name-status --oneline --pretty=format:'%C(yellow)%h%d%C(reset) %s
+
+.gitignore (in working directory)
+
+/target
+.project
+.settings
+*.iml
+*.ipr
+*.iws
+.classpath
+.idea
+cobertura.ser
+*.bak
+*.swp
+

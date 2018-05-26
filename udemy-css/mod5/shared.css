@@ -1,0 +1,161 @@
+/* ====================================================== */
+/* Core */
+/* ====================================================== */
+
+* {
+    /* 
+        target every element to overwrite inheritance and browser defaults when
+        setting width and height (so that the height we set will include the padding
+        and border sizes.
+    */
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    margin: 0;
+}
+
+/* ====================================================== */
+/* Global */
+/* ====================================================== */
+
+.button {
+    background: #0e4f1f;
+    color: white;
+    font: inherit; /* doesn't use browser default */
+    border: 1.5px solid #0e4f1f;
+    padding: 8px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.button:hover, 
+.button:active {
+    background: white;
+    color: #0e4f1f;
+}
+
+.button:focus {
+    outline: none;
+}
+
+/* ====================================================== */
+/* Header / Navbar */
+/* ====================================================== */
+
+.main-header {
+    width: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #2ddf5c;
+    padding: 8px 16px; 
+    z-index: 1; /* z-index works because position: fixed */
+}
+
+.main-header > div {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.main-header__brand {
+    color: #0e4f1f;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 22px;
+    height: 22px;
+    width: 20px;
+    display: inline-block; /* changing from block will honor width and height below */
+}
+
+.main-header__brand img {
+    /* height: 100%; leads to image original height, not container height - cuz a tag was not a block */
+    width: 100%; /* respects container width if anchor tag is not a block */
+    height: 100%;
+}
+
+.main-nav {
+    display: inline-block;
+    text-align: right;
+    width: calc(100% - 75px);
+    vertical-align: middle;
+}
+
+.main-nav__items {
+    margin: 0;
+    padding: 0;
+    list-style: none; /* no ul bullet icons */
+}
+
+.main-nav__item {
+    display: inline-block;
+    margin: 0 16px;
+}
+
+.main-nav__item a {
+    color: #0e4f1f;
+    text-decoration: none;  
+    font-weight: bold;
+    padding: 3px;
+}
+
+/* .main-nav__item a:after  {
+    content: " (Link)";
+    color: red;
+} */
+
+.main-nav__item a:hover,
+.main-nav__item a:active
+{
+    color: white;
+    border-bottom: 2px solid grey;
+}
+
+.main-nav__item--cta a {
+    color: white;
+    background: #ff1b68;
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+.main-nav__item--cta a:hover,
+.main-nav__item--cta a:active
+{
+    color: #ff1b68;
+    background: white;
+    border: none;
+}
+
+/* ====================================================== */
+/* Footer */
+/* ====================================================== */
+
+.main-footer {
+    background: black;
+    padding: 32px;
+    margin-top: 48px;
+}
+
+.main-footer__links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+.main-footer__link {
+    display: inline-block;
+    margin: 0 16px;
+}
+
+.main-footer__link > a {
+    color: white;
+    text-decoration: none;
+}
+
+.main-footer__link > a:hover, 
+.main-footer__link > a:active {
+    color: #ddd;
+}

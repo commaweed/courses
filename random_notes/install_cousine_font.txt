@@ -1,0 +1,5 @@
+get www.fontsquirrel.com/fonts/download/cousine
+sudo mkdir /usr/share/fonts/cousine
+sudo unzip cousine -d /usr/share/fonts/cousine
+sudo chmod -R 777 /usr/share/fonts/cousine
+sudo fc-cache -f -v

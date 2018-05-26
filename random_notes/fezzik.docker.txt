@@ -1,0 +1,61 @@
+sum search docker-engine
+ sudo tee /etc/yum.repos.d/docker.repo <<-'EOF'
+ [dockerrepo]
+ baseurl=https://yum.dockerproject.org/repo/main/centos/7/
+ gpgkey=https://yum.dockerproject.org/gpg
+ sudo yum install docker-engine
+ sudo service docker start
+ docker ps
+ sudo yum install docker-engine
+ sudo yum remove docker
+ sudo yum install docker-engine
+ sudo yum -y remove docker
+ sudo yum install docker-engine
+ sudo yum remove docker-selinux-1.10.3-46.el7.centos.10.x86_64
+ sudo yum install docker-engine
+ sudo yum remove docker-common-1.10.3-46.el7.centos.10.x86_64
+ sudo yum install docker-engine
+ docker ps
+ sudo service docker start
+ docker ps
+ sudo docker run hello-world
+ sudo service docker start
+ docker ps
+ which docker
+ sudo docker ps
+ sudo docker images
+ sudo yum install docker
+ docker ps
+ docker remove fezzik-mongo
+ docker rm fezzik-mongo
+ docker run hello-world
+ docker ps
+ mvn clean package docker:build
+ docker images
+ docker stop hello-world
+ docker pull mongo
+ docker images
+ docker run --name fezzik-mongo -p 27010:27010 -v ~/dev/data/dir:/data/db -d mongo
+ docker ps
+ docker stop fezzik-mongo
+ docker ps
+ docker run --name fezzik-mongo -p 27017:27017 -v ~/dev/data/dir:/data/db -d mongo
+ docker images
+ docker rm fezzik-mongo
+ docker images
+ docker run --name fezzik-mongo -p 27017:27017 -v ~/dev/data/dir:/data/db -d mongo
+ docker ps
+ docker images
+ docker ps
+ docker stop fezzik-mongo
+ docker pull --rebase
+ docker ps
+ docker images
+ docker ps
+ docker ps
+ history | grep docker
+ docker
+ docker images
+ history | docker
+ history | grep docker
+

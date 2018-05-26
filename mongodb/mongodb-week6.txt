@@ -1,0 +1,1016 @@
+Application Engineering: 
+
+------------------------------------------------------------------------------------
+Introduction to Replication
+------------------------------------------------------------------------------------
+
+* how do we get availability and fault tolerance
+* if node goes down, how do we continue to use the system
+
+Replica Set - set of mongod nodes that are mirrored in terms of the data
+-----------
+
+Primary 		Secondary		Secondary
+
+* data written to primary node will asynchronously write to the secondary node
+* if primary goes down, the remaining nodes will have an election to elect a new primary
+* apps will transparently connect to the new primary using the drivers
+* when the original nodes comes back up, it can be treated as a secondary node
+* The minimum number of nodes is three - if you had fewer than that, you couldn't elect a new primary
+  if one goes down
+
+Quiz:
+What is the minimum original number of nodes needed to assure the election of a new Primary if a node goes down?
+1
+2
+*3
+5
+
+------------------------------------------------------------------------------------
+Replica Set Elections
+------------------------------------------------------------------------------------
+
+* Types of replica set nodes
+1.  regular
+	- a node that has the data and can become primary (or secondary
+	- can participate in the voting
+2.  arbiter
+	- a node that is just there for voting purposes
+	- If you want to have an even number of replica nodes you may want one
+	- could have 3 nodes with one arbiter
+	- has no data on it
+3.  delayed/regular node
+	- often a disasterous recovery node
+	- can be set to be an hour (for examples) behind the other nodes
+	- can participate in the voting
+	- cannot be a primary node
+	- priority is 0 (means cannot be elected to a primary node)
+4.  hidden node
+	- cannot be a primary node
+	- often used for analytics
+	- priority is 0
+	- it can participate in the election
+
+Quiz:
+
+Which types of nodes can participate in elections of a new primary?
+*Regular replica set members
+*Hidden Members 
+*Arbiters 
+Lawyers 
+
+------------------------------------------------------------------------------------
+Write Consistency
+------------------------------------------------------------------------------------
+
+* there is only a single primary at any given time
+* in the default configuration - the writes and reads go to the primary
+	- the write have to go to the primary
+	- the reads could go to the secondaries
+	- if the reads do go to the primary, you'll get write consistency (strong consistency with reads with respect to writes)
+		- you won't get stale data - if you write something, you'll be able to read it
+	- if you allow your reads to go to your secondaries, you may end up reading stale data
+		(but you can get eventual consistency by doing this)
+	- the lag between any two nodes is not guaranteed because the replication is asynchronous
+	- one reason to read from secondary is to scale their reads to the replica set (read scaling)
+* when failover occurs, briefly when there is no primary, you cannot complete a write
+
+Quiz:
+
+During the time when failover is occurring, can writes successfully complete?
+Yes
+*No
+
+* failover is usually under 3 seconds
+* you'll get errors inside the program that will occur until the failover period has completed
+
+------------------------------------------------------------------------------------
+Creating a Replica Set
+------------------------------------------------------------------------------------
+
+* normally when you create a replica set, you'll put each mongod on a separate server
+* example for creating a replica set on the same machine
+
+create_replica_set.sh
+-----------------------
+#!/bin/bash
+mkdir -p /data/rs1 /data/rs2 /data/rs3
+mongod --replSet m101 --logpath "1.log" --dbpath /data/rs1 --port 27017 --oplogSize 64 --smallfiles --fork
+mongod --replSet m101 --logpath "2.log" --dbpath /data/rs2 --port 27018 --oplogSize 64 --smallfiles --fork
+mongod --replSet m101 --logpath "3.log" --dbpath /data/rs3 --port 27019 --oplogSize 64 --smallfiles --fork
+
+A.  It will create three directories:
+	1.  /data/rs1
+	2.  /data/rs2
+	3.  /data/rs3
+B.  It will launch three separate mongod processes on three separate ports (to listen on)
+C.  Declare that each one is part of the same replica set (m101)
+D.  It will make three logs 
+E.  forks so that we don't have to run each one in their own shell
+F.  After running the script, it launches the three servers, but they are not initialized yet to know about each other
+
+To tie them together, we execute a command in mongo shell
+init_replica.js
+----------------
+config = { _id: "m101", members:[
+          { _id : 0, host : "localhost:27017"},
+          { _id : 1, host : "localhost:27018"},
+          { _id : 2, host : "localhost:27019"} ]
+};
+rs.initiate(config);
+rs.status();
+
+1.	replica set is called "m101"
+2.	members array
+	a.  declared three servers, host: "host:port" 
+	b.	first one is delayed 5 seconds with respect to other ones and in order to do that, required it cannot be primary
+		so set priority=0
+3.	rs.initiate(config); //initializes the replica set
+4.	rs.status(); //displays the status to see what is going on
+
+Cannot run the initialization command on 2017 because it cannot be primary
+
+mongo --port 27018 < init_replica.js
+
+Now let's connect to it using the mongo command to launch the shell
+$ mongo --port 27108
+MongoDB Shell Version 2.2.0
+Connecting to 127.0.0.1:27018/test
+rs1:SECONDARY> rs.status();
+
+* prompt changed once all three were configures
+rs1:PRIMARY> 
+
+* you cannot query secondaries by default
+* use rs.slaveOk() 
+	- from mongo shell to read from a secondary node
+
+Quiz:
+
+Which command, when issued from the mongo shell, will allow you to read from a secondary?
+db.isMaster()
+db.adminCommand({'readPreference':'Secondary"})
+rs.setStatus("Primary")
+*rs.slaveOk()
+
+------------------------------------------------------------------------------------
+Replica Set Internals
+------------------------------------------------------------------------------------
+* how does replication work behind the scenes
+* rs.isMaster() tells you whether or not you are the master
+* there is a special collection that is a certain size and will loop until it is filled
+	- it is called oplog.rs
+	- db.oplog.rs.find().pretty()
+		- show's the inserts
+	- it is a capped collection and it doesn't need an id field
+	- you can also add an index and it will also get added to the oplog.rs collection
+		- db.people.ensureIndex({'name':1})
+		- db.people.getIndexes()
+		- db.oplog.rs.find().pretty()
+			shows the index in the oplog.rs
+			
+* what would happen if you shutdown the primary, how long would it take for a new secondary to get elected
+	- kill pid for the primary
+	- rs.status() will show the new primary 
+
+Quiz:
+In the video how long did it take to elect a new primary?
+*About three seconds
+Above 10 seconds
+About 30 seconds
+About a minute
+
+------------------------------------------------------------------------------------
+Failover and Rollback
+------------------------------------------------------------------------------------
+
+* a failover situation that could result in a rollback of some data that was previous committed to mongod
+	1.  one three nodes, one primary two secondaries
+	2.	writes are occurring to primary and are being replicated to secondaries a few seconds later
+	3.  primary node goes down, however some writes did not replicate to secondary nodes (oplog.rs not replicated)
+	4.  the two secondaries elect a new primary node
+	5.  the old primary node that failed comes back up as a secondary
+	6.  when the old primary comes up as a secondary, he'll look at the new primary to see if there is anything
+		he needs to take.  He will notice that he has writes that he shouldn't have and then roll them back.
+		
+* way to avoid this scenario is to wait when writing to initial primary that all writes have moved to all nodes
+	set w-writeconcern (???); w=1, j=1 (don't return until the journal is committed on each node)
+
+Quiz:
+
+What happens if a node comes back up as a secondary after a period of being offline and the oplog has looped on the primary?
+*The entire dataset will be copied from the primary (slow and inefficient operation)
+A rollback will occur
+The new node stays offline (does not re-join the replica set)
+The new node begins to calculate Pi to a large number of decimal places
+
+------------------------------------------------------------------------------------
+Connecting to a Replica Set from the Java Driver
+------------------------------------------------------------------------------------
+
+> rs.stepDown()
+> rs.conf()
+
+package week.five.examples;
+
+import java.net.UnknownHostException;
+import java.util.Arrays;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
+
+public class ReplicaSetTest {
+	public static void main(String[] args) throws UnknownHostException, InterruptedException {
+		System.out.println("Starting...");
+		
+		//the specified port is for the primary port and if you rs.stepDown(), you will get error 
+		//because the primary is no longer the primary.  With replica sets, better to use a seed
+		//list.
+		//MongoClient will use the seed list to find all the servers in the replicaset and will
+		//find the primary even if it is not in the seed list
+		MongoClient client = new MongoClient(
+			Arrays.asList(
+				new ServerAddress("localhost", 27017),
+				new ServerAddress("localhost", 27018),
+				new ServerAddress("localhost", 27019)
+			)
+		);
+		
+		DBCollection test = client.getDB("course").getCollection("replica.test");
+		test.drop();
+		
+		for (int i = 0; i < 10; i++) {
+			test.insert(new BasicDBObject("_id", i));
+			System.out.println("Inserted document: " + i);
+			Thread.sleep(500);
+		}
+		System.out.println("Ending...");
+	}
+}
+
+Quiz:
+
+If you leave a replica set node out of the seedlist within the driver, what will happen?
+The missing node will not be used by the application.
+*The missing node will be discovered as long as you list at least one valid node.
+This missing node will be used for reads, but not for writes.
+The missing node will be used for writes, but not for reads.
+
+* it's always good to list at least two valid nodes in your seedlist because if one of them
+  was taken down for maintenance then the app will not start properly.
+
+------------------------------------------------------------------------------------
+Bad Things Happen to Good Nodes
+------------------------------------------------------------------------------------
+
+package week.six.examples;
+
+import java.net.UnknownHostException;
+import java.util.Arrays;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
+import com.mongodb.MongoException.DuplicateKey;
+import com.mongodb.ServerAddress;
+
+public class ReplicaSetFailOverTest {
+	public static void main(String[] args) throws UnknownHostException, InterruptedException {
+		System.out.println("Starting...");
+		
+		/* 	when you use a seedlist, the MongoClient starts a background thread that pings all
+		 	of the nodes in the seedlist and any others that it discovers.
+		 */
+		MongoClient client = new MongoClient(
+			Arrays.asList(
+				new ServerAddress("localhost", 27017),
+				new ServerAddress("localhost", 27018),
+				new ServerAddress("localhost", 27019)
+			)
+		);
+		
+		DBCollection test = client.getDB("course").getCollection("replica.test");
+		test.drop();
+		
+		for (int i = 0; i < 10; i++) {
+			for (int retries = 0; retries <= 2; retries++) {
+				try {
+					test.insert(new BasicDBObject("_id", i));
+					System.out.println("Inserted document: " + i);
+					break;
+				} catch (DuplicateKey e) {
+					//the document may have already inserted
+					System.out.println("Document already inserted: " + i);
+				} catch (MongoException e) {
+					System.out.println(e.getMessage());
+					System.out.println("Retrying");
+					Thread.sleep(5000);
+				}
+			}
+			Thread.sleep(500);
+		}
+		
+		System.out.println("Ending...");
+	}
+}
+
+Quiz:
+
+If you use the MongoClient constructor that takes a seed list of replica set members, are you
+guaranteed to avoid application exceptions during a primary failover?
+Yes
+No
+
+------------------------------------------------------------------------------------
+Write Concern
+------------------------------------------------------------------------------------
+
+* the anatomy of a write operation when you are connected to a replica set
+
+
+	|---------- replication -------------|   |-------------- replication ---------------|
+secondary 								primary										secondary
+						|----------------|   |-----------------|
+					journal									Data Directory
+										  / \
+								(insert)   |
+										client
+
+* the client is connected to secondaries and the primary
+* the writes go to the primary
+* When the write gets to the primary
+	- the primary takes the insert message and figures out what changes need to be made and writes them into RAM,
+	  specifically the memory-map files representing the files in the data directory.  
+		1.	at that point there is an asynchronous process where the writes into RAM are journals that are written
+			to the write ahead log called the journal (gives recoverability in case of a crash - durability with
+			the write to data directory)
+		2.	separately the memory-map files are fsynced into the data directory (written to data directory)
+		3.	at the same time, the secondaries are replicating off of the primary from the oplog and applying the writes
+			into RAM first and then to its own oplog, journal, and data directory
+	- it also writes into a second place, the oplog.rs collection (the operation log), which the secondaries are
+	  operating off of.
+* so how does the client application actually determine whether the write succeeded or not
+	- not as simple as it might appear at first
+	- in mongodb, the insert message that is sent from the client app does not expect a response
+	- if you want to know if the write succeeded, the client app has to send an additional command to the server
+		- get less error (gle) - allows the client app to determine the durability of the write before getting 
+		  acknowledgement back
+		- by default (w=1), the gle will wait for acknowledgement from the primary to complete its write to RAM
+		- by default (j=true), the write won't be acknowledged until the write was written to the journal and RAM
+		- by default (fsync=true), the write won't be acknowledged until its been written to RAM and also fsynced
+		  to the data directory
+		- by default (wtimeout=infinite)
+* in some applications you want to make sure your writes are also replicated to one or more secondaries
+	- do this by changing the w parameter - can be a number corresponding to the number of servers in your replica
+	  set that the write should be replicated to before it is acknowledged (e.g. if you want the client app in
+	  the app to wait for both the primary and one of the secondaries to save the insert into RAM, change w=2)
+	- you would also change a parameter called wtimeout which is infinite by default - set it to indicate how long
+	  you are willing to wait. (it is in milliseconds wtimeout=1000 for 1 second)
+* the java driver actually does send the gle with defaults (that is, by default, the write will be acknowledged)
+	w=1, wtimeout=infinite
+* the java WriteConcern constants
+	- ACKNOWLEDGED - (default) - w=1, wtimeout=0, fsync=false, j=false)
+	- JOURNALED - w=1, wtimout=0, fsync=false, j=true
+	- REPLICA_ACKNOWLEDGE - w=2, wtimeout=0, fsync=false, j=false
+	- MAJORITY - w="majority", wtimeout=0, fsync=false, j=false
+		means that the write needs to be acknowledged by the majority of the members of the replica set
+	-UNACKOWLEDGED - w=0, wtimout=0, fsync=false, j=false
+		1.  means don't send a gle at all
+		2.  why would you do this - if you want to sacrifice durability for very fast writes
+			once send gle, you have to wait for a round trip to occur
+* when a duplicate key error occurs with java driver, the response for it is actually in the gle response
+	- without the gle being sent, you would not get the response
+	
+package week.six.examples;
+
+import java.net.UnknownHostException;
+import java.util.Arrays;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.MongoException;
+import com.mongodb.ServerAddress;
+import com.mongodb.MongoException.DuplicateKey;
+import com.mongodb.WriteConcern;
+
+public class WriteConcernTest {
+	public static void main(String[] args) throws UnknownHostException, InterruptedException {
+		System.out.println("Starting...");
+		
+		//the specified port is for the primary port and if you rs.stepDown(), you will get error 
+		//because the primary is no longer the primary.  With replica sets, better to use a seed
+		//list.
+		//MongoClient will use the seed list to find all the servers in the replicaset and will
+		//find the primary even if it is not in the seed list
+		MongoClient client = new MongoClient(
+			Arrays.asList(
+				new ServerAddress("localhost", 27017),
+				new ServerAddress("localhost", 27018),
+				new ServerAddress("localhost", 27019)
+			)
+		);
+		
+		//option 1:  if want all writes to default to journal, can set it at mongo client level 
+		//w=1, wtimout=0, fsync=false, j=true
+		client.setWriteConcern(WriteConcern.JOURNALED);
+		
+		DB db = client.getDB("course");
+		
+		//option 2:  if want all writes to default to journal, can set it at db level
+		db.setWriteConcern(WriteConcern.JOURNALED);
+		
+		DBCollection collection = db.getCollection("write.test");
+		
+		//option 3:  if want all writes to default to journal, can set it at collection level
+		collection.setWriteConcern(WriteConcern.JOURNALED);
+		
+		collection.drop();
+		
+		DBObject document = new BasicDBObject("_id", 1);
+		collection.insert(document);
+		
+		//insert another (with a duplicate key)
+		try {
+			//option 4:  if want all writes to default to journal, can do it for an individual insert
+			collection.insert(document, WriteConcern.JOURNALED);
+		} catch (DuplicateKey e) {
+			System.out.println(e.getMessage());
+		} 
+
+		System.out.println("Ending...");
+	}
+}
+	
+Quiz:
+What are the w and j settings required to guarantee that an insert, update or delete has been persisted to disk?
+w=0, j=0
+*w=1, j=1
+w=2, j=0
+
+(with journally, fsync is not necessary because journaling provides and equivalent amount of durability)
+
+------------------------------------------------------------------------------------
+Network Errors
+------------------------------------------------------------------------------------
+
+* with j=1 and w=1 in the connection, you might think you could guarantee that a write might complete in mongo
+* however, that isn't true because there can be network errors
+	- if you got acknowlegement - you can be sure the write completed
+	- if you don't get an acknowledgement (i.e. response) - the write may or may not have completed
+	- this is why you use error handling (could also do a test to ensure it was inserted)
+
+Quiz:
+
+What are the reasons why an application may receive an error back even if the write was successful. Check all that apply.
+*The network TCP network connection between the application and the server was reset between the time of the write and
+	the time of the getLastError call. 
+*The MongoDB server terminates between the write and the getLastError call.
+*The network fails between the time of the write and the time of the getLastError call.
+The write violates a primary key constraint on the collection and must be rolled back. 
+
+The 4th one was made up.
+
+------------------------------------------------------------------------------------
+Read Preferences
+------------------------------------------------------------------------------------
+
+* having fine-grain control over reads
+* by default, all reads are sent to the primary - default because it makes apps easy to reason about (you may
+  not be able to read your own writes because of replication delay if you are reading from your secondaries)
+* there are situations where read from secondaries are okay
+	- e.g. might have one app doing inserts and another doing queries
+	- called eventual consistency 
+* read preferences
+	- default is primary
+	- secondary - sends all reads to randomly selected secondaries
+	- secondary preferred - sends writes to secondary if there is one, otherwise sends to primary (possible for them to be down)
+	- primary preferred = sends writes to primary if the primary unless it is down, then it will send them to secondary
+	- nearest - sends writes to secondary or primary (won't distinquish between them)
+		driver will look at the ping time and will scatter the reads to all servers within a certain latency of the fastest ping
+
+package week.six.examples;
+
+import java.net.UnknownHostException;
+import java.util.Arrays;
+
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.MongoClient;
+import com.mongodb.ReadPreference;
+import com.mongodb.ServerAddress;
+
+public class ReadPreferenceTest {
+	public static void main(String[] args) throws UnknownHostException, InterruptedException {
+		System.out.println("Starting...");
+		
+		MongoClient client = new MongoClient(
+			Arrays.asList(
+				new ServerAddress("localhost", 27017),
+				new ServerAddress("localhost", 27018),
+				new ServerAddress("localhost", 27019)
+			)
+		);
+		
+		//option 1: could set read preference on client
+		client.setReadPreference(ReadPreference.nearest());
+		
+		DB db = client.getDB("course");
+		
+		//option 2: could set read preference on db
+		db.setReadPreference(ReadPreference.nearest());
+		
+		DBCollection collection = db.getCollection("write.test");
+		
+		//option 3: could set read preference on collection
+		collection.setReadPreference(ReadPreference.nearest());
+		
+		//option 4: could set read preference on the query
+		DBCursor cursor = collection.find().setReadPreference(ReadPreference.nearest());
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+		} finally {
+			cursor.close();
+		}
+		
+
+		System.out.println("Ending...");
+	}
+}
+
+------------------------------------------------------------------------------------
+Introduction to Sharding
+------------------------------------------------------------------------------------
+
+* approach to horizontal scalability (scaling out)
+* rather having a collection on one database, you may want to have it be on several
+* set up shards and the shards are meant to split data up 
+* generally speaking, each shard should be its own replica set
+* when making queries, sometimes the queries get distributed to the differing shards
+* the mongos server routes the queries
+* mongodb uses a range-based approach for sharding using a shard key (e.g. order_id)
+	- collections are broken up into chunks based upon ranges of the shard key
+* if the query includes the shard key, the router looks at the mapping to find a particular shard (for example)
+  and will route directly to shard
+* if the query doesn't include the shard key, the router has to scatter the request to all the servers
+* when dealing with a sharded environment, you have to include the shard key with the insert
+* sharding is at a database level 
+	- collections that are not sharded end up in the first shard (shard 0)
+* shard key is some part of the document itself
+* there can be more than one mongos - they are stateless (you can even set up something similar to a replica set)
+* when using sharded environment, you no longer connect directly to mongod (only mongos)
+	- if using mongo shell, you connect to mongos and it tells you that you are
+
+Quiz:
+If the shard key is not include in a find operation and there are 3 shards, each one a replica set with 3 nodes,
+how many nodes will see the find operation?
+1
+*3
+9
+6
+
+------------------------------------------------------------------------------------
+Building a Sharded Environment
+------------------------------------------------------------------------------------
+
+* more of a dba task
+* going to build a sharded enviroment with two shards (each one is a replica set of 3 mongos)
+* also going to need some config servers 
+	- little mongod servers that keep track of where the shards are
+	- do not run in a replica set (agreement protocol between them)
+	- in production you use three (in dev you can use one)
+	
+1.  figure out where you are going to put your data (on the physical box)
+	- e.g. 	/data/db
+			/data/shard0
+				/data/shard0/rs0
+				/data/shard0/rs1
+				/data/shard0/rs2
+			/data/shard1
+				/data/shard1/rs0
+				/data/shard1/rs1
+				/data/shard1/rs2
+				
+init_sharded_env.sh
+---------------------------------------------------------
+
+# Andrew Erlichson
+# 10gen
+# script to start a sharded environment on localhost
+
+# clean everything up
+echo "killing mongod and mongos"
+killall mongod
+killall monogs
+echo "removing data files"
+rm -rf /data/config
+rm -rf /data/shard*
+
+
+# start a replica set and tell it that it will be a shard0
+mkdir -p /data/shard0/rs0 /data/shard0/rs1 /data/shard0/rs2
+mongod --replSet s0 --logpath "s0-r0.log" --dbpath /data/shard0/rs0 --port 37017 --fork --shardsvr --smallfiles
+mongod --replSet s0 --logpath "s0-r1.log" --dbpath /data/shard0/rs1 --port 37018 --fork --shardsvr --smallfiles
+mongod --replSet s0 --logpath "s0-r2.log" --dbpath /data/shard0/rs2 --port 37019 --fork --shardsvr --smallfiles
+
+sleep 5
+# connect to one server and initiate the set
+mongo --port 37017 << 'EOF'
+config = { _id: "s0", members:[
+          { _id : 0, host : "localhost:37017" },
+          { _id : 1, host : "localhost:37018" },
+          { _id : 2, host : "localhost:37019" }]};
+rs.initiate(config)
+EOF
+
+# start a replicate set and tell it that it will be a shard1
+mkdir -p /data/shard1/rs0 /data/shard1/rs1 /data/shard1/rs2
+mongod --replSet s1 --logpath "s1-r0.log" --dbpath /data/shard1/rs0 --port 47017 --fork --shardsvr --smallfiles
+mongod --replSet s1 --logpath "s1-r1.log" --dbpath /data/shard1/rs1 --port 47018 --fork --shardsvr --smallfiles
+mongod --replSet s1 --logpath "s1-r2.log" --dbpath /data/shard1/rs2 --port 47019 --fork --shardsvr --smallfiles
+
+sleep 5
+
+mongo --port 47017 << 'EOF'
+config = { _id: "s1", members:[
+          { _id : 0, host : "localhost:47017" },
+          { _id : 1, host : "localhost:47018" },
+          { _id : 2, host : "localhost:47019" }]};
+rs.initiate(config)
+EOF
+
+# start a replicate set and tell it that it will be a shard2
+mkdir -p /data/shard2/rs0 /data/shard2/rs1 /data/shard2/rs2
+mongod --replSet s2 --logpath "s2-r0.log" --dbpath /data/shard2/rs0 --port 57017 --fork --shardsvr --smallfiles
+mongod --replSet s2 --logpath "s2-r1.log" --dbpath /data/shard2/rs1 --port 57018 --fork --shardsvr --smallfiles
+mongod --replSet s2 --logpath "s2-r2.log" --dbpath /data/shard2/rs2 --port 57019 --fork --shardsvr --smallfiles
+
+sleep 5
+
+mongo --port 57017 << 'EOF'
+config = { _id: "s2", members:[
+          { _id : 0, host : "localhost:57017" },
+          { _id : 1, host : "localhost:57018" },
+          { _id : 2, host : "localhost:57019" }]};
+rs.initiate(config)
+EOF
+
+
+# now start 3 config servers
+mkdir -p /data/config/config-a /data/config/config-b /data/config/config-c 
+mongod --logpath "cfg-a.log" --dbpath /data/config/config-a --port 57040 --fork --configsvr --smallfiles
+mongod --logpath "cfg-b.log" --dbpath /data/config/config-b --port 57041 --fork --configsvr --smallfiles
+mongod --logpath "cfg-c.log" --dbpath /data/config/config-c --port 57042 --fork --configsvr --smallfiles
+
+
+# now start the mongos on a standard port
+mongos --logpath "mongos-1.log" --configdb localhost:57040,localhost:57041,localhost:57042 --fork
+echo "Waiting 60 seconds for the replica sets to fully come online"
+sleep 60
+echo "Connnecting to mongos and enabling sharding"
+
+# add shards and enable sharding on the test db (connects to mongos on standard port)
+# these are the commands to add the shards - mongos knows about config servers, but config servers don't know about shards
+# this ties it all together
+# we give one of the nodes in the replicaset when adding a shard (seed list) and it discovers the rest of them
+# db=test, collection=grades, key=student_id
+# if the collection doesn't exist, mongod will create it with an index on student_id
+# if collection does exist, you need to create the index on student_id (this is a requirement)
+mongo <<'EOF'
+db.adminCommand( { addShard : "s0/"+"localhost:37017" } );
+db.adminCommand( { addShard : "s1/"+"localhost:47017" } );
+db.adminCommand( { addShard : "s2/"+"localhost:57017" } );
+db.adminCommand({enableSharding: "test"})
+db.adminCommand({shardCollection: "test.grades", key: {student_id:1}});
+EOF
+
+---------------------------------------------------------
+$ mongo
+mongos> sh.help();
+mongos> sh.status();
+
+* database that has partitioned: true - means sharded
+
+mongos> db.grades.stats();
+mongos> db.grades.find({student_id:1}).explain();
+
+* goes to shard 0 only
+
+mongos> db.grades.find({}).limit(10).explain();
+
+* goes to all the shards because no key was passed
+	
+Quiz:
+
+If you want to build a production system with two shards, each one a replica set with three nodes, how may mongod processes must you start?
+2
+6
+7
+*9
+
+* 3 servers for each shard and 3 for the config servers = 9
+
+------------------------------------------------------------------------------------
+Implications of Sharding as a developer
+------------------------------------------------------------------------------------
+
+* every document includes the shard key
+* the shard key is immutable - once set, you cannot change the key
+* you need an index that starts with the shard key and it cannot be a multi-key index
+	e.g. student_id, class
+* when you do an update, have to specify the shard key or specify that multi is true
+	- if you do multi and don't specify shard key, sends it to all nodes
+* no shard key means scatter gather operation (expensive)
+* cannot have a unique key (no unique index) unless it starts with the shard key
+	- reason - no way to enforce uniqueness across shards 
+
+Quiz:
+
+Suppose you wanted to shard the zip code collection after importing it. You want to shard on zip code. 
+What index would be required to allow MongoDB to shard on zip code?
+*An index on zip or a non-multi-key index that starts with zip.
+No index is required to use zip as the shard key.
+A unique index on the zip code.
+Any index that that includes the zip code.
+
+------------------------------------------------------------------------------------
+Sharding + Replication
+------------------------------------------------------------------------------------
+
+* they are almost always done together
+* the shards wouldn't be reliable if you didn't replicate them
+* The mongos probably has a connection going to the primary for each of the shards
+* write concern still exists for shards (applies to each of the nodes)
+	- j, w 
+* mongos is usually replicated itself - usually on the same box as the application itself (its lightweight)
+
+Quiz:
+Suppose you want to run multiple mongos routers for redundancy. What level of the stack will assure that you can
+failover to a different mongos from within your application?
+mongod
+mongos
+*drivers
+sharding config servers
+
+The drivers are attached to mongos
+
+------------------------------------------------------------------------------------
+Choosing a Shard Key
+------------------------------------------------------------------------------------
+
+* how to choose a shard key in practice
+1.  sufficient cardinality - sufficient variety of values (a large number of values)
+2.  avoid hot spotting in writes
+	- occurs for anything that is monotonically increasing - example is id that increases infinitely using timestamp
+	- inserts will continue to hammer one shard
+	- maybe choose a composite key (e.g. vendor, order_date)
+
+Quiz:
+You are building a facebook competitor called footbook that will be a mobile social network of feet. 
+You have decided that your primary data structure for posts to the wall will look like this:
+
+{'username':'toeguy',
+     'posttime':ISODate("2012-12-02T23:12:23Z"),
+     "randomthought": "I am looking at my feet right now",
+     'visible_to':['friends','family', 'walkers']}
+
+Thinking about the tradeoffs of shard key selection, select the true statements below.
+*Choosing posttime as the shard key will cause hotspotting as time progresses.
+*Choosing username as the shard key will distribute posts to the wall well across the shards.
+*Choosing visible_to as a shard key is illegal.
+Choosing posttime as the shard key suffers from low cardinality. 
+
+------------------------------------------------------------------------------------
+Homework 6.1
+------------------------------------------------------------------------------------
+
+Which of the following statements are true about MongoDB replication. Check all that apply.
+*The minimum sensible number of voting nodes to a replica set is three. 
+MongoDB replication is synchronous. 
+The Mongo shell is capable of attaching to a replica set and automatically failing over. 
+By default, using the new MongoClient connection class, w=1 and j=1. 
+*The oplog utilizes a capped collection. 
+
+MongoDB replication is *a*synchronous.
+For mongo shell, we need to do manual fail over.
+MongoClient connection class default write concern is w=1 and j=0 (WriteConcern.ACKNOWLEDGED).
+
+------------------------------------------------------------------------------------
+Homework 6.2
+------------------------------------------------------------------------------------
+
+Let's suppose you have a five member replica set and want to assure that writes are committed to the journal
+and are acknowledged by at least 3 nodes before you proceed forward. What would be the appropriate settings for w and j?
+w=1, j=1
+w="majority", j=1
+w=3, j=0
+w=5, j=1
+w=1,j=3
+
+------------------------------------------------------------------------------------
+Homework 6.3
+------------------------------------------------------------------------------------
+
+Which of the following statements are true about choosing and using a shard key:
+The shard key must be unique 
+*There must be a index on the collection that starts with the shard key. 
+*Mongo can not enforce unique indexes on a sharded collection other than the shard key itself. 
+*Any update that does not contain the shard key will be sent to all shards. 
+You can change the shard key on a collection if you desire. 
+
+------------------------------------------------------------------------------------
+Homework 6.4
+------------------------------------------------------------------------------------
+
+You have a sharded system with three shards and have sharded the collections "grades" in the "test" database across those shards. The output of sh.status() when connected to mongos looks like this:
+
+mongos> sh.status()
+--- Sharding Status --- 
+  sharding version: { "_id" : 1, "version" : 3 }
+  shards:
+	{  "_id" : "s0",  "host" : "s0/localhost:37017,localhost:37018,localhost:37019" }
+	{  "_id" : "s1",  "host" : "s1/localhost:47017,localhost:47018,localhost:47019" }
+	{  "_id" : "s2",  "host" : "s2/localhost:57017,localhost:57018,localhost:57019" }
+  databases:
+	{  "_id" : "admin",  "partitioned" : false,  "primary" : "config" }
+	{  "_id" : "test",  "partitioned" : true,  "primary" : "s0" }
+		test.grades chunks:
+				s1	4
+				s0	4
+				s2	4
+			{ "student_id" : { $minKey : 1 } } -->> { "student_id" : 0 } on : s1 Timestamp(12000, 0) 
+			{ "student_id" : 0 } -->> { "student_id" : 2640 } on : s0 Timestamp(11000, 1) 
+			{ "student_id" : 2640 } -->> { "student_id" : 91918 } on : s1 Timestamp(10000, 1) 
+			{ "student_id" : 91918 } -->> { "student_id" : 176201 } on : s0 Timestamp(4000, 2) 
+			{ "student_id" : 176201 } -->> { "student_id" : 256639 } on : s2 Timestamp(12000, 1) 
+			{ "student_id" : 256639 } -->> { "student_id" : 344351 } on : s2 Timestamp(6000, 2) 
+			{ "student_id" : 344351 } -->> { "student_id" : 424983 } on : s0 Timestamp(7000, 2) 
+			{ "student_id" : 424983 } -->> { "student_id" : 509266 } on : s1 Timestamp(8000, 2) 
+			{ "student_id" : 509266 } -->> { "student_id" : 596849 } on : s1 Timestamp(9000, 2) 
+			{ "student_id" : 596849 } -->> { "student_id" : 772260 } on : s0 Timestamp(10000, 2) 
+			{ "student_id" : 772260 } -->> { "student_id" : 945802 } on : s2 Timestamp(11000, 2) 
+			{ "student_id" : 945802 } -->> { "student_id" : { $maxKey : 1 } } on : s2 Timestamp(11000, 3) 
+
+If you ran the query
+
+use test
+db.grades.find({'student_id':530289})
+
+Which shards would be involved in answering the query?
+s0,s1 and s2
+s0
+*s1
+s2
+
+------------------------------------------------------------------------------------
+Homework 6.5
+------------------------------------------------------------------------------------
+
+In this homework you will build a small replica set on your own computer. We will check that it works with validate.py, 
+which you should download from the Download Handout link.
+
+Create three directories for the three mongod processes. On unix, this could be done as follows:
+
+mkdir -p /data/rs1 /data/rs2 /data/rs3
+
+Now start three mongo instances as follows. Note that are three commands. The browser is probably wrapping them visually.
+
+mongod --replSet m101 --logpath "1.log" --dbpath /data/rs1 --port 27017 --smallfiles --oplogSize 64 --fork
+mongod --replSet m101 --logpath "2.log" --dbpath /data/rs2 --port 27018 --smallfiles --oplogSize 64 --fork
+mongod --replSet m101 --logpath "3.log" --dbpath /data/rs3 --port 27019 --smallfiles --oplogSize 64 --fork
+
+Windows users: Omit -p from mkdir. Also omit --fork and use start mongod with Windows compatible paths (i.e. backslashes "\")
+for the --dbpath argument (e.g; C:\data\rs1).
+
+Now connect to a mongo shell and make sure it comes up
+
+mongo --port 27017
+
+Now you will create the replica set. Type the following commands into the mongo shell:
+
+config = { _id: "m101", members:[
+          { _id : 0, host : "localhost:27017"},
+          { _id : 1, host : "localhost:27018"},
+          { _id : 2, host : "localhost:27019"} ]
+};
+rs.initiate(config);
+
+At this point, the replica set should be coming up. You can type
+
+rs.status()
+
+to see the state of replication.
+
+Now run validate.py to confirm that it works.
+
+python validate.py
+
+Validate connects to your local replica set and checks that it has three nodes. It has been tested under Pymongo 2.3 and 2.4. 
+Type the validation code below.
+
+homework_6_5.sh
+---------------------------------------------------------
+
+# clean everything up
+echo "killing mongod and mongos"
+killall mongod
+killall monogs
+echo "removing data files"
+rm -rf /data/rs*
+
+# start a replica set and tell it that it will be a shard0
+mkdir -p /data/rs1 /data/rs2 /data/rs3
+mongod --replSet m101 --logpath "1.log" --dbpath /data/rs1 --port 27017 --smallfiles --oplogSize 64 --fork
+mongod --replSet m101 --logpath "2.log" --dbpath /data/rs2 --port 27018 --smallfiles --oplogSize 64 --fork
+mongod --replSet m101 --logpath "3.log" --dbpath /data/rs3 --port 27019 --smallfiles --oplogSize 64 --fork
+
+sleep 5
+
+# connect to one server and initiate the set
+mongo --port 27017 << 'EOF'
+config = { _id: "m101", members:[
+          { _id : 0, host : "localhost:27017"},
+          { _id : 1, host : "localhost:27018"},
+          { _id : 2, host : "localhost:27019"} ]
+};
+rs.initiate(config);
+EOF
+
+$ sh homework_6_5.sh
+$ ps -ef | grep mongo
+student   7694     1  4 03:46 ?        00:00:00 mongod --replSet m101 --logpath 1.log --dbpath /data/rs1 --port 27017 --smallfiles --oplogSize 64 --fork
+student   7711     1  3 03:46 ?        00:00:00 mongod --replSet m101 --logpath 2.log --dbpath /data/rs2 --port 27018 --smallfiles --oplogSize 64 --fork
+student   7728     1  3 03:46 ?        00:00:00 mongod --replSet m101 --logpath 3.log --dbpath /data/rs3 --port 27019 --smallfiles --oplogSize 64 --fork
+student   7791  2134  0 03:47 pts/2    00:00:00 grep --color=auto mongo
+$ mongo --port 27017
+MongoDB shell version: 2.4.8
+connecting to: 127.0.0.1:27017/test
+Server has startup warnings: 
+Mon Feb 17 03:46:54.490 [initandlisten] 
+Mon Feb 17 03:46:54.491 [initandlisten] ** NOTE: This is a 32 bit MongoDB binary.
+Mon Feb 17 03:46:54.491 [initandlisten] **       32 bit builds are limited to less than 2GB of data (or less with --journal).
+Mon Feb 17 03:46:54.491 [initandlisten] **       Note that journaling defaults to off for 32 bit and is currently off.
+Mon Feb 17 03:46:54.491 [initandlisten] **       See http://dochub.mongodb.org/core/32bit
+Mon Feb 17 03:46:54.491 [initandlisten] 
+m101:PRIMARY> rs.status();
+{
+	"set" : "m101",
+	"date" : ISODate("2014-02-17T08:48:31Z"),
+	"myState" : 1,
+	"members" : [
+		{
+			"_id" : 0,
+			"name" : "localhost:27017",
+			"health" : 1,
+			"state" : 1,
+			"stateStr" : "PRIMARY",
+			"uptime" : 97,
+			"optime" : Timestamp(1392626821, 1),
+			"optimeDate" : ISODate("2014-02-17T08:47:01Z"),
+			"self" : true
+		},
+		{
+			"_id" : 1,
+			"name" : "localhost:27018",
+			"health" : 1,
+			"state" : 2,
+			"stateStr" : "SECONDARY",
+			"uptime" : 87,
+			"optime" : Timestamp(1392626821, 1),
+			"optimeDate" : ISODate("2014-02-17T08:47:01Z"),
+			"lastHeartbeat" : ISODate("2014-02-17T08:48:31Z"),
+			"lastHeartbeatRecv" : ISODate("2014-02-17T08:48:31Z"),
+			"pingMs" : 5,
+			"syncingTo" : "localhost:27017"
+		},
+		{
+			"_id" : 2,
+			"name" : "localhost:27019",
+			"health" : 1,
+			"state" : 2,
+			"stateStr" : "SECONDARY",
+			"uptime" : 87,
+			"optime" : Timestamp(1392626821, 1),
+			"optimeDate" : ISODate("2014-02-17T08:47:01Z"),
+			"lastHeartbeat" : ISODate("2014-02-17T08:48:31Z"),
+			"lastHeartbeatRecv" : ISODate("2014-02-17T08:48:30Z"),
+			"pingMs" : 0,
+			"syncingTo" : "localhost:27017"
+		}
+	],
+	"ok" : 1
+}
+m101:PRIMARY> 
+
+$ python validate.py
+Welcome to the HW 6.x replica Checker. My job is to make sure you started a replica set with three nodes
+Looks good. Replica set with three nodes running
+Tests Passed for HW 6.5. Your HW 6.5 validation code is kjvjkl3290mf0m20f2kjjv

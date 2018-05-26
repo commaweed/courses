@@ -1,0 +1,111 @@
+# how to install global command line utilities (don't forget to set path to the prefix) 
+npm config set prefix ~/apps/nodenpm
+npm install -g bower
+npm install -g grunt-cli
+npm install -g gulp-cli
+npm install -g yo
+npm install tsd -g
+npm install -g karma-cli
+npm install -g node-sass-cli
+npm install -g node-sass (i think the cli needs it - use node-sass from command-line)
+npm install -g grunt-init
+
+#################
+# LOCAL PROJECT #
+#################
+
+# how to create a package.json in a local directory
+npm init
+
+# how to create a bower.json in a local directory
+bower init
+
+# to change directory from bower_componets to lib, add a file in same directory as bower.json called .bowerrc with
+{ "directory": "public/vendor" }
+
+# grunt dev dependencies (package.json)
+npm install grunt --save-dev
+npm install grunt-contrib-jshint --save-dev
+npm install grunt-contrib-nodeunit --save-dev
+npm install grunt-contrib-uglify --save-dev
+npm install grunt-contrib-watch --save-dev
+npm install grunt-contrib-connect --save-dev
+npm install grunt-open --save-dev
+
+# gulp dev dependencies (package.json)
+npm install gulp --save-dev
+npm install gulp-concat --save-dev
+npm install gulp-connect --save-dev
+npm install gulp-watch --save-dev
+npm install gulp-uglify --save-dev
+npm install gulp-sass --save-dev
+npm install gulp-jshint --save-dev
+npm install gulp-main-bower-files --save-dev
+npm install gulp-bower-normalize --save-dev
+npm install --save-dev node-sass
+
+# typescript dev dependencies
+npm install typescript --save-dev
+npm install grunt-typescript --save-dev
+
+# how to add regular dependencies to a local project package.json
+npm install underscore --save
+npm install bootstrap --save
+npm install angular --save
+npm install requirejs --save
+
+# npm is meant to manage development workflow with node (either client-side or server-side)
+# bower is meant to manage development workflow with client-side webapps that are not dependent upon node
+
+# to do bower, use bower instead of npm above
+# alternative, could do npm install -g grunt-bower-requirejs as a stand-alone cli tool
+# to change directory from bower_componets to lib, add a file in same directory as bower.json called .bowerrc with
+{ "directory": "public/vendor" }
+
+# bower simple install of common dependencies
+bower install underscore bootstrap angular requirejs --save
+
+# yeoman generator installs
+npm install -g generator-angular
+npm install -g generator-bootstrap4
+npm install -g generator-angular-typescript
+npm install -g generator-gulp-angular
+npm install -g generator-sass-boilerplate
+npm install -g generator-gulp-webapp
+npm install -g generator-karma
+npm install -g generator-karma-typescript
+npm install -g generator-angular-typescript-gulp
+npm install -g angular-bootstrap   
+npm install -g jangular 
+npm install -g spring-microservice 
+
+# to create yeoman projects
+yo angular
+
+
+# install http-server at the global leavel (start with http-server)
+npm install http-server -g
+
+# install webpack
+npm install -g webpack
+
+# install jasmine testing (usage: jasmine-node /path/to/project/directory)
+# Jasmine-node requires you to put your specs in a directory called spec and for the specs in that directory to end with .spec.js
+npm install jasmine-node -g
+
+# config
+[tjjenk2:~]$ npm config list -g
+; cli configs
+global = true
+scope = ""
+user-agent = "npm/4.2.0 node/v6.9.5 linux x64"
+
+; userconfig /home/tjjenk2/.npmrc
+prefix = "/home/tjjenk2/apps/nodenpm"
+
+; node bin location = /home/tjjenk2/apps/node-v6.9.5/bin/node
+; cwd = /home/tjjenk2
+; HOME = /home/tjjenk2
+; "npm config ls -l" to show all defaults.
+
+

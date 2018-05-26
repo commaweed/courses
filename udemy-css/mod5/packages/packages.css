@@ -1,0 +1,101 @@
+main {
+    padding-top: 32px;
+}
+
+.background {
+    background: url("../images/plans-background.jpg") center/cover;
+    /* filter: grayscale(100%); maximum gray */
+    filter: grayscale(70%); /* ie doesn't support it; might need a polyfill */
+    width: 100%;
+    height: 100%;
+    position: fixed; /* z-index requires this (well non-static one) */
+    z-index: -1; /* default is z-index: auto; => 0 */
+}
+
+.packages-plan {
+    background: #d5ffdc;
+    border: 4px solid #0e4f1f;
+    border-left: none;
+    padding: 32px;
+    margin: 16px 0;
+    width: 80%;
+    /* z-index: -1000; z-index has no impact without position that is not static */
+    position: relative; /* closest ancestor to badge needs position */
+}
+
+.packages-plan > a {
+    text-decoration: none;
+    display: block; 
+}
+
+.packages-plan:hover,
+.packages-plan:active
+ {
+    box-shadow: 2px 2px 4px rgba(0,0,0, 0.5);
+    border-color: red;
+}
+
+.packages-plan__title {
+    color: black;
+    font-weight: bold;
+    font-size: 32px;
+}
+
+.packages-plan__badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 20px;
+    font-size: 12px;
+    color: white;
+    background: #ff5454;
+    padding: 8px;
+}
+
+.packages-plan__subtitle {
+    color: grey;
+    font-weight: bold;
+    font-size: 28px;
+}
+
+.packages-plan__description {
+    border: 1px solid  #0e4f1f;
+    background: white;
+    padding: 10px;
+    color: #0e4f1f;
+    font-size: 20px;
+}
+
+.clearfix {
+    clear: both;
+}
+
+#plus {
+    background: rgba(213, 255, 220, 0.95);
+}
+
+#free {
+    background: rgba(234, 252, 237, 0.95);
+    float: right;
+    border-right: none;
+    border-left: 4px solid #0e4f1f;
+    text-align: right;
+}
+
+#free:hover,
+#free:active{
+    border-left-color: red;
+}
+
+#premium {
+    background: rgba(14, 71, 39, 0.95);
+    color: #fff;
+}
+
+#premium .packages-plan__title {
+    color: white;
+}
+
+#premium .packages-plan__subtitle {
+    color: #bbb;
+}

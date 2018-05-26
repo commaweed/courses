@@ -1,0 +1,366 @@
+<!-- 
+https://plnkr.co/edit/AUm8MwV3mG8F0Emsas5n?p=preview
+-->
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.css" rel="stylesheet" data-semver="3.3.6" data-require="bootstrap-css@3.3.6" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="script.js"></script>
+  </head>
+
+  <body>
+
+    <!-- container adds padding and grids require containers as well -->
+    <div class="container">
+
+      <!-- page header will increase font, add spacing, and add an underline under text -->
+      <div class="page-header">
+        <h1>Hello Plunker!</h1>
+      </div>
+
+      <!-- ==================================================================================== -->
+      <!-- jumobtron enlarges fonts and puts everything inside a colored box with rounder corners -->
+      <!-- when outside a container it will take up width of entire screen -->
+      <!-- ==================================================================================== -->
+      <div class="jumbotron">
+        <p>Below is a bunch of bootstrap button types and their various colors.  Also demonstrating
+           a few ways to declare a button using different HTML elements:
+        </p>
+        <!-- example of a bunch of bootstrap buttons -->
+        <a href="#" class="btn btn-default btn-lg" role="button">Default Button</a>
+        <input type="button" value="Info with btn" class="btn btn-info" />
+        <button type="submit" class="btn-info">Info with no btn</button>
+        <button type="submit" class="btn btn-danger">Danger</button>
+        <button type="submit" class="btn btn-primary btn-sm">Primary Small</button>
+        <button type="submit" class="btn btn-success btn-xs">Success Xtra Small</button>
+        <button type="submit" class="btn btn-warning btn-lg">Warning Large</button>
+        <button type="submit" class="btn btn-link btn-lg">Link Large</button>
+        <!-- can create buttons that appear disabled -->
+        <button type="submit" class="btn btn-primary btn-sm" disabled="disabled">Primary Disabled Button</button>
+        <!-- can create links that appear disabled -->
+        <a href="#" class="btn btn-default btn-lg disabled" role="button">Disabled Default Large Link</a>
+        <!-- you can group buttons -->
+        <p>Below is a large button group similar to radio buttons</p>
+        <div class="btn-group btn-group-lg" role="group">
+          <button type="button" class="btn btn-default">Button 1</button>
+          <button type="button" class="btn btn-default">Button 2</button>
+          <button type="button" class="btn btn-default">Button 3</button>
+        </div>
+      </div>
+
+      <!-- ==================================================================================== -->
+      <!-- demonstrating responsiveness by letting bootstrap reposition the columns based upon the screen size -->
+      <!-- ==================================================================================== -->
+      <div class="container">
+        <!-- bootstrap uses a 12 column system -->
+        <div class="row">
+          <!-- 
+            col-lg-3 => for large screens (+1200px), take up 3 columns
+            col-md-3 => for medium screens (+962px), take up 3 columns
+            col-sm-6 => for small screens, take up 6 columns
+            col-xs-12 => for really small screen take up all the space (12)
+          -->
+          <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+            <h4>Column 1</h4>
+
+              TORTOLA, British Virgin Islands (AP) — A thriving financial services industry that evolved over the last 30 years in the British Virgin Islands made it one of the most popular places in the world to form a corporation, turning a sleepy cluster of Caribbean islands into a global hub of finance.
+              Now the British Virgin Islands has come under scrutiny like never before thanks to the leak of confidential documents from a Panama-based law firm that specializes in offshore finance.
+              More than half the 200,000 offshore companies set up by the Mossack Fonseca law firm, including ones owned by the father of British Prime Minister David Cameron and relatives of Chinese leader Xi Jinping, were registered in the BVI, according to reports coordinated by the International Consortium of Investigative Journalists.
+          </div>
+          <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+            <h4>Column 2</h4>
+
+              TORTOLA, British Virgin Islands (AP) — A thriving financial services industry that evolved over the last 30 years in the British Virgin Islands made it one of the most popular places in the world to form a corporation, turning a sleepy cluster of Caribbean islands into a global hub of finance.
+              Now the British Virgin Islands has come under scrutiny like never before thanks to the leak of confidential documents from a Panama-based law firm that specializes in offshore finance.
+              More than half the 200,000 offshore companies set up by the Mossack Fonseca law firm, including ones owned by the father of British Prime Minister David Cameron and relatives of Chinese leader Xi Jinping, were registered in the BVI, according to reports coordinated by the International Consortium of Investigative Journalists.
+          </div>
+          <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+            <h4>Column 3</h4>
+
+              TORTOLA, British Virgin Islands (AP) — A thriving financial services industry that evolved over the last 30 years in the British Virgin Islands made it one of the most popular places in the world to form a corporation, turning a sleepy cluster of Caribbean islands into a global hub of finance.
+              Now the British Virgin Islands has come under scrutiny like never before thanks to the leak of confidential documents from a Panama-based law firm that specializes in offshore finance.
+              More than half the 200,000 offshore companies set up by the Mossack Fonseca law firm, including ones owned by the father of British Prime Minister David Cameron and relatives of Chinese leader Xi Jinping, were registered in the BVI, according to reports coordinated by the International Consortium of Investigative Journalists.
+          </div>
+          <div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
+            <h4>Column 4</h4>
+
+              TORTOLA, British Virgin Islands (AP) — A thriving financial services industry that evolved over the last 30 years in the British Virgin Islands made it one of the most popular places in the world to form a corporation, turning a sleepy cluster of Caribbean islands into a global hub of finance.
+              Now the British Virgin Islands has come under scrutiny like never before thanks to the leak of confidential documents from a Panama-based law firm that specializes in offshore finance.
+              More than half the 200,000 offshore companies set up by the Mossack Fonseca law firm, including ones owned by the father of British Prime Minister David Cameron and relatives of Chinese leader Xi Jinping, were registered in the BVI, according to reports coordinated by the International Consortium of Investigative Journalists.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================================================================================== -->
+    <!-- demonstrating a collapsible section -->
+    <!-- ==================================================================================== -->
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-2 col-md-2 col-sm-4 col-xs-12">
+          <h4>
+            <a href="#col1Content" data-toggle="collapse">Column 1</a>
+          </h4>
+          <!-- whenever it first loads it will show by default (i.e. "collapse in") -->
+          <div id="col1Content" class="collapse in">
+              This is a column section that by default will be collapsed vias class="collapse" and when the column heading is clicked it will expand
+          </div>
+        </div>
+
+        <div class="col-lg-4 col-md-4 col-sm-8 col-xs-12">
+          <h4>
+            <a href="#col2Content" data-toggle="collapse">Column 2</a>
+          </h4>
+          <!-- whenever it first loads it will collapse by default (i.e. "collapse") -->
+          <div id="col2Content" class="collapse in">
+              This is a column section that by default will be collapsed vias class="collapse" and when the column heading is clicked it will expand
+          </div>
+        </div>
+
+        <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+          <h4>
+            <a href="#col3Content" data-toggle="collapse">Column 3</a>
+          </h4>
+          <!-- whenever it first loads it will collapse by default (i.e. "collapse") -->
+          <div id="col3Content" class="collapse">
+              This is a column section that by default will be collapsed vias class="collapse" and when the column heading is clicked it will expand
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================================================================================== -->
+    <!-- Hide things in certain modes -->
+    <!-- ==================================================================================== -->
+    <div class="container">
+      <!-- a well is similar to a jumbotron - colored background with rounded borders -->
+      <div class="well hidden-sm hidden-md hidden-lg"><p>Screen &lt; 768px</p></div>
+      <div class="well hidden-md hidden-lg"><p>Screen &gt;=768px and &lt; 992px</p></div>
+      <div class="well hidden-lg"><p>Screen &gt;=992px and &lt; 1200px</p></div>
+      <div class="well"><p>Screen &gt;=1200px</p></div>
+    </div>    
+
+
+    <!-- ==================================================================================== -->
+    <!-- moving things to right of the screen -->
+    <!-- ==================================================================================== -->
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6"></div> <!-- having this here will make the table go to the right -->
+        <div class="col-md-6"> <!-- alternatively, you could add col-md-offset-6 and remove div above to do same thing -->
+          <table class="table table-bordered table-striped table-hover">
+            <tr>
+              <th class="col-md-2"></th> <!-- you can adjust grid width of table columns as well -->
+              <th class="text-center">one</th>
+              <th class="text-center">two</th>
+              <th class="text-center">three</th>
+            </tr>
+            <tr>
+              <th><a href="#">Some Link</a></th>
+              <th>one</th>
+              <th>two</th>
+              <th>three</th>
+            </tr>    
+            <tr>
+              <th><a href="#">Some Link</a></th>
+              <th>one</th>
+              <th>two</th>
+              <th>three</th>
+            </tr>            
+          </table>
+        </div>
+      </div>
+    </div><br/>
+
+    <!-- ==================================================================================== -->
+    <!-- glyph icons -->
+    <!-- ==================================================================================== -->
+    <div class="container">
+      <div class="jumbotron">
+        <p><span class="glyphicon glyphicon-asterisk"></span></p>
+
+        <a href="#" class="btn btn-default btn-lg">
+          <span class="glyphicon glyphicon-play-circle"></span>
+          link button
+        </a>
+
+        <button type="button" class="btn btn-primary btn-lg">
+          <!-- aria-hidden - 508 compliance - will hide button from screen readers -->
+          <span class="glyphicon glyphicon-file" aria-hidden="true"></span>
+          button
+        </button>
+      </div>
+    </div><br/>
+
+    <!-- ==================================================================================== -->
+    <!-- Text colors and backgrounds -->
+    <!-- ==================================================================================== -->
+    <div class="container">
+      <span class="text-primary">one</span>
+      <span class="text-success">two</span>
+      <span class="text-info">three</span>
+      <span class="text-warning">four</span>
+      <span class="text-danger">five</span>
+    </div><br/>
+    <div class="container">
+      <span class="bg-primary">one</span>
+      <span class="bg-success">two</span>
+      <span class="bg-info">three</span>
+      <span class="bg-warning">four</span>
+      <span class="bg-danger">five</span>
+    </div> <br/>  
+
+    <!-- ==================================================================================== -->
+    <!-- Menus -->
+    <!-- ==================================================================================== -->    
+    <div class="container">
+      <div class="dropdown">
+        <button 
+          class="btn btn-primary dropdown-toggle bnt-lg" 
+          type="button" 
+          id="dropdownMenu1" 
+          data-toggle="dropdown"
+          aria-haspopup="true"
+          aira-expanded="false"
+        >
+          Some Dropdown Menu
+          <span class="caret"></span>
+        </button>
+
+        <ul class="dropdown-menu">
+          <li class="dropdown-header">Header 1</li>
+          <li><a href="#">Item 1</a></li>
+          <li><a href="#">Item 2</a></li>
+          <li><a href="#">Item 3</a></li>
+
+          <li role="separator" class="divider"></li>
+
+          <li class="dropdown-header">Header 2</li>
+          <li><a href="#">Item 4</a></li>
+          <li class="disabled"><a href="#">Item 5</a></li>
+          <li><a href="#">Item 6</a></li>
+        </ul>
+
+      </div>
+    </div><br/>
+
+    <!-- ==================================================================================== -->
+    <!-- Input Groups -->
+    <!-- ==================================================================================== -->   
+    <div class="container">
+      <div class="input-group input-group-lg">
+        <span class="input-group-addon">Enter Something:</span><input type="text" class="form-control" placeholder="Enter something" />
+      </div><br/>
+
+      <div class="input-group input-group-sm">
+        <input type="text" class="form-control" placeholder="Enter something" />
+        <span class="input-group-btn">
+          <button class="btn btn-default">Click Me!</button>
+        </span>
+      </div><br/>
+
+      <div class="input-group">
+        <span class="input-group-addon">
+         <input type="checkbox" />
+        </span>
+        <input type="text" class="form-control" placeholder="Enter something" aria-label="..." />
+      </div><br/>
+
+    </div><br/>
+
+    <!-- ==================================================================================== -->
+    <!-- Input Group Menu -->
+    <!-- ==================================================================================== -->      
+    <div class="container">
+      <div class="row">
+        <div class="input-group">
+          <div class="input-group-btn">
+            <button 
+              class="btn btn-default dropdown-toggle" 
+              type="button" 
+              id="dropdownMenu1" 
+              data-toggle="dropdown"
+              aria-haspopup="true"
+              aira-expanded="false"
+            >
+              Some Dropdown Menu
+              <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu">
+              <li><a href="#">Item 1</a></li>
+              <li><a href="#">Item 2</a></li>
+              <li><a href="#">Item 3</a></li>
+            </ul>
+          </div>
+
+          <input type="text" class="form-control" placeholder="Enter something" aria-label="..." />
+        </div>
+      </div>
+    </div><br/>
+
+    <!-- ==================================================================================== -->
+    <!-- Navigational menu -->
+    <!-- ==================================================================================== --> 
+    <div class="container">
+      <!-- horizontal navigational menu -->
+      <ul class="list-inline">
+        <li><a href="#">Item 1</a></li>
+        <li><a href="#">Item 1</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu 1<span class="caret"></span>
+            <ul class="dropdown-menu">
+              <li><a href="#">Menu Item 1</a></li>
+              <li><a href="#">Menu Item 2</a></li>
+              <li><a href="#">Menu Item 3</a></li>
+            </ul>
+          </a>
+        </li>
+      </ul>
+
+      <br/>
+
+      <!-- vertical navigational menu -->
+      <ul class="nav nav-pills nav-stacked">
+        <li class="active"><a href="#">Item 1</a></li>
+        <li><a href="#">Item 2</a></li>
+        <li><a href="#">Item 3</a></li>   
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu 1<span class="caret"></span>
+            <ul class="dropdown-menu">
+              <li><a href="#">Menu Item 1</a></li>
+              <li><a href="#">Menu Item 2</a></li>
+              <li><a href="#">Menu Item 3</a></li>
+            </ul>
+          </a>
+        </li>        
+      </ul>
+    </div><br/>
+
+    <!-- ==================================================================================== -->
+    <!-- tabs -->
+    <!-- ==================================================================================== --> 
+    <div class="container">
+      <ul class="nav nav-tabs"> <!-- can use nav-pills too -->
+        <li class="active"><a href="#item1" data-toggle="tab">Item 1</a></li>
+        <li><a href="#item2" data-toggle="tab">Item 2</a></li>
+        <li><a href="#item3" data-toggle="tab">Item 3</a></li>           
+      </ul>
+
+      <div class="tab-content">
+        <div id="item1" class="tab-pane fade in active">item 1</div>
+        <div id="item2" class="tab-pane fade">item 2</div>
+        <div id="item3" class="tab-pane fade">item 3</div>
+      </div>
+    </div><br/>
+
+    <!-- jquery needs to be before the bootstrap one -->
+    <script data-require="jquery@*" data-semver="2.2.0" src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>    
+
+  </body>
+
+</html>

@@ -1,0 +1,49 @@
+# using docker to launch elastic search 
+docker container run -d -p 9200:9200 --name elasticsearch elasticsearch
+docker container run -d -p 5601:5601 --name kibana kibana 
+curl 127.0.0.1:9200
+
+# download shakespear
+wget http://media.sundog-soft.com/es6/shakes-mapping.json
+wget http://media.sundog-soft.com/es6/shakespeare_6.0.json
+
+# submit it to elastic search, index name is shakespeare
+curl -H "Content-Type: application/json" -XPUT localhost:9200/shakespeare --data-binary @shakes-mapping.json
+
+# to delete an index
+curl -XDELETE localhost:9200/shakespeare
+
+# now the data
+curl -H "Content-Type: application/json" -XPOST 'localhost:9200/shakespeare/doc/_bulk?pretty' --data-binary @shakespeare_6.0.json
+
+# now some queries
+curl -H "Content-Type: application/json" -XGET 'localhost:9200/shakespeare/_search?pretty' -d '{ "query": { "match_phrase": { "text_entry": "to be or not to be" } } }'
+
+# a mapping is a schema definition (es can infer schemas or be defined by you)
+curl -H "Content-Type: application/json" -XPUT localhost:9200/movies -d '{"mappings":{"movie":{"properties": {"year":{"type":"date"}}}}}'
+curl -H "Content-Type: application/json" -XGET localhost:9200/movies/_mapping/movie?pretty
+
+# insert a document (excluding header because it is in .curlrc)
+curl -XPUT localhost:9200/movies/movie/109487 -d '{"genre":["IMAX","Sci-Fi"],"title":"Interstellar","year":2014}'
+
+# can use bulk with a bunch of json to insert a bunch of documents at once
+curl -XPUT localhost:9200/_bulk -d '{}\n{}...'
+curl -XPUT localhost:9200/_bulk?pretty --data-binary @movies.json
+
+# DNS round robin testing example (create 2, they will get random names because we are not specifying the names)
+docker network create dude
+docker container run -d --net dude --net-alias search elasticsearch:2
+docker container run -d --net dude --net-alias search elasticsearch:2
+docker container ls
+docker container run --rm --net dude alpine nslookup search # returns 2 nslookup entries, one for each server (i.e. 172.18.0.[2,3] search.dude)
+docker container run --rm --net dude centos curl -s search:9200 # returns interloper elasticsearch server
+docker container run --rm --net dude centos curl -s search:9200 # returns mr.m elasticsearch server
+# running them over and over is not an even round-robin (more random)
+docker container rm -f name1 name2
+
+
+
+
+
+
+

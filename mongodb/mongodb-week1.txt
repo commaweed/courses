@@ -1,0 +1,630 @@
+INTRODUCTION:
+
+------------------------------------------------------------------------------------
+json document
+------------------------------------------------------------------------------------
+
+schema 1:
+{
+  'firstname': 'andrew',
+  'lastname': 'erichson',
+  'hobbies': [ 'cycling', 'golf', 'photography' ]
+}
+
+schema 2: (notice how it is similar but different than schema 1)
+{
+  'firstname': 'andrew',
+  'lastname': 'erichson',
+  'cityofbirth': 'boston'
+}
+
+both docs can be put directly into mongdb into a colleciton
+mongo db holds collections of documents
+documents are hierchical and you can access them atomically
+
+------------------------------------------------------------------------------------
+what is mongodb
+------------------------------------------------------------------------------------
+
+- non-relational json document store
+- non-relational means doesn't support relational algreba that is expressed by sql
+- json document store - structured docs expressed using json (json document database)
+-mongodb supports dynamic schema; it is schema-less
+-supports having documents in the same collection that do not have exactly the same schema
+-mongodb stores the documents similar to how programs store objects into containers
+-you can serialize them into json and store them into mongdb as bson
+-cannot do this in a relational database, you'd have to parse it and put it into its individual columns
+-removed features that you see in a database:
+	1.  do not support joins between collections (joins are not horizontally scalable)
+	2.  no transactions across multiple documents
+	3.  do not support sql
+
+-does support indexes and secondary indexes
+	they are challenging to perform well
+	
+-more on mongodb being schemaless
+	dont need to alter table to change your document schema
+	
+
+------------------------------------------------------------------------------------
+where does mongodb fit in the world
+------------------------------------------------------------------------------------
+ 
+scalability and performance:
+	high:  mem-cache-d and key-value-store (not very functional though)
+Depth of Functionality:
+	high:  relational db (oracle, sybase, etc.) (not very scalable though)
+		scale up well, add more and more hardware to get high performance from a single node
+		scale out and use commodity hardware, not good at it
+Mongodb:
+	Very scalable and with almost as much functionality as relational 
+
+------------------------------------------------------------------------------------
+Application Architecture:
+------------------------------------------------------------------------------------
+
+-mongod - process that starts mongodb
+-mongo shell - stand alone program called mongo - connects to mongdb using tcp
+-java application - all inside jvm
+	1)  Our code
+	2)  frameworks to make it easy to write web apps :
+		a.  sparkjava - a micro-web framework inspired by sonatra that will allow us to easily set up routes 
+			that map to URLs so that when a request comes in for a particular url, we can handle it and make
+			a response via http
+			-don't need a web server because it embeds jetty inside of it
+		b.  freemarker - templating language that allows us to create html views so that we can use MVC 
+		    programming
+	3)  mongo java driver - a library that makes the tcp connections to mongodb for us
+- we will use port 8082
+
+------------------------------------------------------------------------------------
+mongo shell
+------------------------------------------------------------------------------------
+
+- start shell with mongo process
+- use test -> if database has not previously been used/created, it will create it otherwise, it switches into it
+- shell uses javascript itself
+- imagine there is a collection called things
+	- to save a small document into things:
+		db.things.save({a:1, b:2, c:3})
+	- to see what is in things
+		db.things.find()
+		{"_id" : ObjectId("506..."), "a" : 1, "b" : 2, "c" : 3 } - was assigned a unique ObjectId and there is always an index on them 
+	- add another document
+		db.things.save(a:3, b:4, c:6, d:200 })
+	- find the documents where a=1
+		db.things.find({a:1})
+- example
+	db.things.save({a:1, b:1, fruit:['apple','orange', pear']})
+	db.things.save({name: "andrew", address: { street: "elm drive", city: "Palo Alto", zip: "94305", house_number: 34}})
+- db.things.find().pretty() - displays in pretty way
+- db.names.remove({name:"Richard"})
+
+db.users.save({name:"Andrew Erlichson", city_of_birth:"Queens"})
+db.users.find()
+db.users.find().pretty()
+db.users.save({name:"Richard Kreuter", city_of_birth: "Chicago", favorite_color: "black"})
+var j = db.users.findOne({'name': "Andrew Erlichson"})
+j.favorite_color = "Blue"
+j
+db.users.save(j)
+
+------------------------------------------------------------------------------------
+System Requirements
+------------------------------------------------------------------------------------		
+JDK 1.6 or 1.7
+
+------------------------------------------------------------------------------------
+Installing mongodb
+------------------------------------------------------------------------------------
+download mongodb
+www.mongodb.org/downloads
+2.2.0 - production release
+in 32-bit version, mongodb is limited to 2gb because it uses memory map files, thus you want 64-bit
+
+become root: sudo bash
+mkdir /data
+mkdir /data/db
+chmod -R 777 /data/db
+./mongod
+
+soft rlimits too low - number of connections
+
+maven:
+----------------
+install maven 3.1.1
+mvn archetype:generate
+> 331 (default)
+
+mvn compile exec:java -Dexec.mainClass="mongo.text.one.App"
+   	<dependency>
+   		<groupId>org.mongodb</groupId>
+     	<artifactId>mongo-java-driver</artifactId>
+      	<version>2.10.1</version>
+   	</dependency>
+
+------------------------------------------------------------------------------------
+mongodb program
+------------------------------------------------------------------------------------
+package mongo.test.one;
+
+import java.net.UnknownHostException;
+
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
+
+public class HelloMongoDb {
+	public static void main(String[] args) throws UnknownHostException {
+		System.out.println("Starting...");
+//		MongoClient client = new MongoClient("localhost", 27017);
+		MongoClient client = new MongoClient(new ServerAddress("localhost", 27017));
+		
+		//get a database
+		DB database = client.getDB("course");
+		
+		//get a collection
+		DBCollection collection = database.getCollection("hello");
+		
+		//find one
+		DBObject document = collection.findOne();
+		System.out.println(document);
+		
+		System.out.println("finished!");
+	}
+}
+
+------------------------------------------------------------------------------------
+spark-java
+------------------------------------------------------------------------------------
+	not in maven central - add this to pom.xml
+	
+	<!-- spark-java is not in maven central -->
+	<repositories>
+		<repository>
+			<id>Spark repository</id>
+			<url>http://www.sparkjava.com/nexus/content/repositories/</url>
+		</repository>	
+	</repositories>
+	
+	<!-- add spark-java dependency -->
+	<dependency>
+	  <groupId>com.sparkjava</groupId>
+	  <artifactId>spark-core</artifactId>
+	  <version>1.1.1</version>
+	</dependency>
+
+------------------------------------------------------------------------------------
+spark java server / program - http://www.sparkjava.com/download.html
+------------------------------------------------------------------------------------
+package mongo.test.one;
+
+import spark.Request;
+import spark.Response;
+import spark.Route;
+import spark.Spark;
+
+//default port is 4567
+public class HelloSpark {
+	public static void main(String[] args) {
+		//a route is a pattern that this route should match (home page in this case)
+		Spark.get(new Route("/") {
+			
+			@Override
+			public Object handle(Request arg0, Response arg1) {
+				//return the following response
+				return "Hello World From Spark";
+			}
+		});
+	}
+}
+
+browser:  localhost:4567
+
+------------------------------------------------------------------------------------
+freemarker - http://freemarker.org/
+------------------------------------------------------------------------------------
+-won't to avoid writing a ton of html
+-define template files and use java collections (map) as your propert name-value pairs
+
+		<!-- freemarker -->
+		<dependency>
+			<groupId>org.freemarker</groupId>
+			<artifactId>freemarker</artifactId>
+			<version>2.3.19</version>
+		</dependency>
+
+------------------------------------------------------------------------------------
+hello.ftl
+------------------------------------------------------------------------------------
+<html>
+	<head>
+		<title>Welcome</title>
+	</head>
+	<body>
+		<h1>Hello ${name}</h1>
+	</body>
+</html>		
+
+------------------------------------------------------------------------------------
+HelloFreeMarker.java
+------------------------------------------------------------------------------------
+package mongo.test.one;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+public class HelloFreeMarker {
+	public static void main(String[] args) throws IOException, TemplateException {
+		//configure
+		//in classpath relative to HelloFreeMarker class, start of classpath
+		Configuration configuration = new Configuration();
+		configuration.setClassForTemplateLoading(HelloFreeMarker.class, "/");
+		
+		//get a handle to the template
+		Template helloTemplate = configuration.getTemplate("hello.ftl");
+		
+		//set up the name-value pair data
+		Map<String, Object> helloMap = new HashMap<>();
+		helloMap.put("name", "FreeMarker");
+		
+		//merge the data with the template into a writer (simple string in this case)
+		StringWriter writer = new StringWriter();
+		helloTemplate.process(helloMap, writer);
+		
+		//print the results
+		System.out.println(writer.toString());
+	}
+}
+
+------------------------------------------------------------------------------------
+helloSparkAndFreeMarker
+------------------------------------------------------------------------------------
+package mongo.test.one;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+
+import spark.Request;
+import spark.Response;
+import spark.Route;
+import spark.Spark;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+public class HelloSparkAndFreeMarker {
+	
+	public static void configureHomePageRoute() {
+		//a route is a pattern that this route should match (home page in this case)
+		Spark.get(new Route("/") {
+			
+			@Override
+			public Object handle(Request request, Response response) {
+				//data
+				Map<String, Object> helloMap = new HashMap<>();
+				helloMap.put("name", "travis");
+				
+				String data = null;
+				try {
+					data = getTemplateData("hello.ftl", helloMap);
+				} catch (TemplateException | IOException e) {
+					e.printStackTrace();
+					halt(500);
+				}
+
+				return data;
+			}
+		});		
+	}
+	
+	public static String getTemplateData(
+		String template,
+		Map<String, Object> data
+	) throws TemplateException, IOException {
+		//configure
+		//in classpath relative to HelloFreeMarker class, start of classpath
+		Configuration configuration = new Configuration();
+		configuration.setClassForTemplateLoading(HelloFreeMarker.class, "/");
+		
+		//get a handle to the template
+		Template helloTemplate = configuration.getTemplate(template);
+		
+		//merge the data with the template into a writer (simple string in this case)
+		StringWriter writer = new StringWriter();
+		helloTemplate.process(data, writer);
+		
+		return writer.toString();		
+	}
+	
+	public static void main(String[] args) {
+		configureHomePageRoute();
+	}
+}
+
+------------------------------------------------------------------------------------
+all in one
+------------------------------------------------------------------------------------
+package mongo.test.one;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.net.UnknownHostException;
+
+import spark.Request;
+import spark.Response;
+import spark.Route;
+import spark.Spark;
+
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+public class HelloAllInOne {
+	public static void configureHomePageRoute() {
+		Spark.get(new Route("/") {
+			@Override
+			public Object handle(Request request, Response response) {
+				String data = null;
+				try {
+					data = getTemplateData("hello.ftl");
+				} catch (TemplateException | IOException e) {
+					e.printStackTrace();
+					halt(500);
+				}
+
+				return data;
+			}
+		});		
+	}
+	
+	public static DBObject getDocument() throws UnknownHostException {
+		MongoClient client = new MongoClient(new ServerAddress("localhost", 27017));
+		DBCollection collection =  client.getDB("course").getCollection("hello");
+		return collection.findOne();
+	}
+	
+	public static String getTemplateData(
+		String template
+	) throws TemplateException, IOException {
+		Configuration configuration = new Configuration();
+		configuration.setClassForTemplateLoading(HelloAllInOne.class, "/");
+		
+		Template helloTemplate = configuration.getTemplate(template);
+		
+		StringWriter writer = new StringWriter();
+		helloTemplate.process(getDocument(), writer);
+		
+		return writer.toString();		
+	}
+	
+	public static void main(String[] args) {
+		configureHomePageRoute();
+	}
+}
+
+------------------------------------------------------------------------------------
+spark route tutorial
+------------------------------------------------------------------------------------
+- jetty is started as a background thread
+- inside you have a spark handler - when a request comes into jetty, jetty forwards it to spark handler
+- within spark handler, you have one or more routes
+	get /
+	get /test
+-examples
+	route("/")
+	route("/test")
+	route("/echo/:thing") :thing is a wildcard (e.g. /echo/cat 
+	request.params(":thing") - returns cat
+
+package mongo.test.one;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import spark.Request;
+import spark.Response;
+import spark.Route;
+import spark.Spark;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+
+public class SparkFormHandling {
+	public static String getTemplateData(
+		String template,
+		Map<String, Object> data
+	) throws TemplateException, IOException {
+		Configuration configuration = new Configuration();
+		configuration.setClassForTemplateLoading(SparkFormHandling.class, "/");
+		
+		Template helloTemplate = configuration.getTemplate(template);
+		
+		//DBObject is a map and freemarker takes a map
+		StringWriter writer = new StringWriter();
+		helloTemplate.process(data, writer);
+		
+		return writer.toString();		
+	}	
+	
+	public static void main(String[] args) {
+		Spark.get(new Route("/") {
+			@Override
+			public Object handle(Request request, Response response) {
+				Map<String, Object> fruits = new HashMap<>();
+				fruits.put("fruits", Arrays.asList("apple", "pear", "banana", "peach"));
+				
+				String data = null;
+				try {
+					data=getTemplateData("fruit_picker.ftl", fruits);
+				} catch (TemplateException | IOException e) {
+					halt(500);
+					e.printStackTrace();
+				}
+				
+				return data;
+			}
+		});
+		
+		Spark.post(new Route("/favorite_fruit") {
+			@Override
+			public Object handle(Request request, Response response) {
+				String fruit = request.queryParams("fruit");
+				return fruit == null ? "Enter something" : "you picked ["+fruit+"]";
+			}
+		});
+
+	}
+}
+
+------------------------------------------------------------------------------------
+json revisited
+------------------------------------------------------------------------------------
+Arrays - lists of things []
+Dictionaries - associative maps { name: value }
+{
+	name: "value",
+	age: 23,
+	interests: [
+		{ "one", "two", "three" }
+	]
+
+------------------------------------------------------------------------------------
+blog relational
+------------------------------------------------------------------------------------
+
+posts
+-----------
+post_id
+author_id
+title
+post
+date
+
+comments
+-----------
+comment_id
+name
+comment
+email
+
+tags
+-----------
+tag_id
+name
+
+post_tags
+-----------
+post_id
+tag_id
+
+post_comments
+-----------
+post_id
+comment_id
+
+authors
+-----------
+author_id
+user name
+passwords
+
+would have to access all 6 tables to display blogs with comments and tags
+
+------------------------------------------------------------------------------------
+mongo relational
+------------------------------------------------------------------------------------
+
+posts:
+{ title: "dk", body: "...", author: "sdk", date: "...",
+	comments: [
+		{ name: "joe", email: "yo", comment:"..."},
+		{ name: "joe", email: "yo", comment:"..."}
+	],
+	tags: [ "cycling", "ed", "games" ]
+}
+
+authors:
+{ _id: "some_name", password: "hashed_password" }
+
+------------------------------------------------------------------------------------
+to embed or not to embed
+------------------------------------------------------------------------------------
+why embed tags and comments with the posts - could have duplicates
+answer: they are accessed along with the posts - rare that you would access tags or comments independently of posts
+the way you access the data guides it
+mongdb doc can't have more than 16 mb 
+
+------------------------------------------------------------------------------------
+homework #1
+------------------------------------------------------------------------------------
+install mongo db
+restore command - upload data
+connect with shell
+find one command
+
+student@javacourse1:~/_mongodb/hw1$ unzip hw1-1.184820ec29b6.zip 
+Archive:  hw1-1.184820ec29b6.zip
+   creating: dump/m101/
+  inflating: dump/m101/funnynumbers.bson  
+  inflating: dump/m101/funnynumbers.metadata.json  
+  inflating: dump/m101/hw1.bson      
+  inflating: dump/m101/hw1.metadata.json  
+student@javacourse1:~/_mongodb/hw1$ mongorestore
+connected to: 127.0.0.1
+Thu Jan  9 18:27:23.985 dump/m101/hw1.bson
+Thu Jan  9 18:27:23.987 	going into namespace [m101.hw1]
+1 objects found
+Thu Jan  9 18:27:24.004 	Creating index: { key: { _id: 1 }, ns: "m101.hw1", name: "_id_" }
+Thu Jan  9 18:27:24.053 dump/m101/funnynumbers.bson
+Thu Jan  9 18:27:24.053 	going into namespace [m101.funnynumbers]
+100 objects found
+Thu Jan  9 18:27:24.086 	Creating index: { key: { _id: 1 }, ns: "m101.funnynumbers", name: "_id_" }
+student@javacourse1:~/_mongodb/hw1$ ll
+total 8
+drwxrwxr-x 3 student student 4096 Jan  9 18:27 dump/
+-rwxrwxr-x 1 student student 1448 Jan  9 18:22 hw1-1.184820ec29b6.zip*
+
+
+> use m101
+switched to db m101
+> show collections
+funnynumbers
+hw1
+system.indexes
+> db.hw1.findone()
+Thu Jan  9 18:30:20.064 TypeError: Property 'findone' of object m101.hw1 is not a function
+> db.hw1.findOne()
+{
+	"_id" : ObjectId("50773061bf44c220307d8514"),
+	"answer" : 42,
+	"question" : "The Ultimate Question of Life, The Universe and Everything"
+}
+> 
+
+hw1-1: 42
+hw1-2: choose the correct json
+hw1-3: 366
+hw1-4: 2805
+
+
+
+

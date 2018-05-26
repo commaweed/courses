@@ -1,0 +1,1855 @@
+CRUD: (remember db = m101 (i.e. use m101))
+
+------------------------------------------------------------------------------------
+Crud and the mongo shell
+------------------------------------------------------------------------------------
+
+Mongo-db is right side
+
+Create - Insert
+Read - Find
+Update - update
+delete - remove
+
+mongo db's crud operations exist as methods/functions in programming language APIs, not as a separate language
+
+------------------------------------------------------------------------------------
+secrets of the mongo shell
+------------------------------------------------------------------------------------
+
+mongo-shell is interactive javascript interpretter
+	can key in fragments of javascript and have them evaluated and interpretted immediately
+
+$ mongo
+MongoDB Shell version:  2.2.0
+connecting to:  test <-- database you are connected to
+
+e.g. 
+> for (i=0; i < 3; i++) print("hello there!");
+hello there!
+hello there!
+hello there!
+
+emacs:
+ctrl-a, ctrl-f, ctrl-b
+
+> help
+	can see a list of topics
+> help keys
+	key bindings
+
+* can complete tokens using tab
+
+> x = 1
+1
+> x
+1
+> y = "abc"
+abc
+> z = { a:1 } <-- javascript object
+{ "a": 1 }
+> z.a <-- z is treated as a variable and and so is a
+1
+> z["a"] <-- z is treated as a variable and a as a literal
+1
+> w="a"
+a
+> z[w]
+1
+
+quiz:
+> x = { "a" : 1 };
+{ "a" : 1 }
+> y = "a"
+a
+> x[y]++;
+1
+> print(x.a);
+2
+
+
+------------------------------------------------------------------------------------
+bson introduction
+------------------------------------------------------------------------------------
+
+* how does mongodb represents data? How does mongo shell interpret that data when it gets it back from db?
+* mongodb is a document-oriented database
+	- means mongodb's fundamental record type is a kind of nested dictionary of key-value associations
+	- map documents that come out of mongodb to objects in the programming language that can represent these key-value associations
+		(i.e. javascript object)
+	- obj = { "a": 1, "b": "hello", "c": ["apples", "tomatoes"] }
+	- then the value of the variable obj is suitable for use as a mongodb document
+	- mongodb doesn't use this json syntax for storing or retrieving data, it uses a binary representation (bson - binary json)
+	- bsonspec.org - superset of what can be transcribed in json
+	
+	basic data types (superset of json)
+	element 	::= 	
+			"\x01" e_name double 	Floating point 			(double precision floating point numbers)
+		| 	"\x02" e_name string 	UTF-8 string 			(sequence of validly encoded UTF-8 code units)
+		| 	"\x03" e_name document 	Embedded document 		(nested objects)
+		| 	"\x04" e_name document 	Array 					(nested objects whose keys are the integers 0,1,2,3,etc.
+		| 	"\x05" e_name binary 	Binary data				(BSON not JSON)
+		| 	"\x06" e_name 			Undefined — Deprecated
+		| 	"\x07" e_name (byte*12) ObjectId				(used for unique identification of things)
+		| 	"\x08" e_name "\x00" 	Boolean "false"
+		| 	"\x08" e_name "\x01" 	Boolean "true"
+		| 	"\x09" e_name int64 	UTC datetime			(time since jan 1st 1970)
+		| 	"\x0A" e_name 			Null value
+		| 	"\x0B" e_name cstring 	cstring 	Regular expression
+		| 	"\x0C" e_name string 	(byte*12) 	DBPointer — Deprecated
+		| 	"\x0D" e_name string 	JavaScript code
+		| 	"\x0E" e_name string 	Symbol — Deprecated
+		| 	"\x0F" e_name code_w_s 	JavaScript code w/ scope
+		| 	"\x10" e_name int32 	32-bit Integer
+		| 	"\x11" e_name int64 	Timestamp
+		| 	"\x12" e_name int64 	64-bit integer
+		| 	"\xFF" e_name 			Min key
+		| 	"\x7F" e_name 			Max key
+	
+To represent an exact integer value in the mongo shell - constructor syntax
+> NumberInt(1)	<-- 32-bit integer values
+> NumberLong(1) <-- 64-bit integer values
+> NumberLong(1) + NumberLong(3) <-- might loose precision; appears to give a long; is double precision floating point value in db
+4
+> new Date()
+ISODate("2012-10-21T17:41:58.389Z") <-- always gives you a new date object different from what javascript does
+
+you can use these constructor syntaxes
+> obj = { "a":1, "b": ISODate("2012-10-21T17:41:58.389Z"), "c": NumberLong(42) }
+
+- mongodb traffics internally in a binary representation (bson)
+- bson representation supports the basic datatypes that mongodb contains
+- the bson spec incorporates all the types json can contain, plus a few more
+- the mongo shell and all the drivers that talk to mongodb support the varies datatypes that bson supports 
+
+Quiz:
+All except complex Numbers
+
+------------------------------------------------------------------------------------
+Inserting Docs
+------------------------------------------------------------------------------------
+
+* this establishes a binding between a variable in javascript and a value - does not communicate with the database
+> doc = { "name": "smith", "age": 30, "profession": "hacker" }
+
+* to communicate with the database, we have to use a handle on the database
+* the shell has a variable called db
+> db
+test
+
+* documents in the database live inside of collections
+* we present collections as properties of the db
+* shell will interpret people as the name of a collection inside the current database
+> db.people.insert(doc)
+	insert is a method on collections
+* to query a collection
+> db.people.find() 
+	returns all documents in that collection
+* when you insert a document into mongodb, the server requires that all documents have a unique identifying field 
+	- primary, immutable key ("_id")
+* all normal collections in mongodb have the "_id" primary key requirement
+* give type called ObjectId, the construction of which takes into account:
+	1.  the current time
+	2.	an identifier for the machine that is constructing the objectid
+	3.  the process id of the process on the computer that is constructing the objectid
+	4.  and a counter that is global to the process that is constructing the objectid
+	By smooshing these together, we get value that has very high probability of being unique
+* if your application does not explicitly fill in a field called "_id" when its inserting a document into the database
+	- an objectid will be constructed for you that will be used as the "_id" of your document
+* you can use an value you want for "_id"
+
+Quiz:
+> db.fruit.insert({ "name":"apple", "color":"red", "shape":"round"})
+> db.fruit.find()
+{ "_id" : ObjectId("52d594b9ca29546d82b184e0"), "name" : "apple", "color" : "red", "shape" : "round" }
+
+------------------------------------------------------------------------------------
+Introduction to findOne
+------------------------------------------------------------------------------------
+
+* the findOne() with no arguments pulls a random document from the collection
+> db.people.findOne()
+
+* 1st argument to findOne(document) specifies what criteria i'm looking for to find a match (i.e. WHERE CLAUSE)
+> db.people.findOne({"name":"Jones"})
+	 - actually send the bson encoding of this document argument over the wire wrapped up in some message 
+	   headers as an operation for the db to execute 
+	 - that is to say, the query that gets executed in the server is presented to the server in the form 
+	   of a structured document as opposed to a sequence of text that it has to parse and analyze like rdb
+	 
+* the 2nd argument allows you to stipulate what fields you want to find in the database
+	- that is, the fields you want to see (analogous to the columns list in sql)
+	- findOne(document, document)
+> db.people.findOne({ "name":"Jones"}, {"name":true, "_id": false})
+> db.people.findOne({ "name":"Jones"}, {"name":1, "_id":0})
+{ "name":"Jones"}
+	- means you want to see the name field but not the "_id" field
+
+Quiz:
+db.users.findOne({"username":"dwight"}, {"email":true, "_id":false})
+
+------------------------------------------------------------------------------------
+Introduction to find
+------------------------------------------------------------------------------------
+
+> for (i=0;i<1000;i++) { names = ["exam","essay","quiz"]; for (j=0;j<3;j++) { 
+	db.scores.insert({"student":i, "type": names[j], score: Math.round(Math.random()*100) } ); } }
+> db.scores.find()
+{ "_id" : ObjectId("52d59b67ca29546d82b184e1"), "student" : 0, "type" : "exam", "score" : 5 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e2"), "student" : 0, "type" : "essay", "score" : 98 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e3"), "student" : 0, "type" : "quiz", "score" : 86 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e4"), "student" : 1, "type" : "exam", "score" : 60 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e5"), "student" : 1, "type" : "essay", "score" : 3 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e6"), "student" : 1, "type" : "quiz", "score" : 65 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e7"), "student" : 2, "type" : "exam", "score" : 73 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e8"), "student" : 2, "type" : "essay", "score" : 34 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184e9"), "student" : 2, "type" : "quiz", "score" : 16 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184ea"), "student" : 3, "type" : "exam", "score" : 55 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184eb"), "student" : 3, "type" : "essay", "score" : 70 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184ec"), "student" : 3, "type" : "quiz", "score" : 10 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184ed"), "student" : 4, "type" : "exam", "score" : 37 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184ee"), "student" : 4, "type" : "essay", "score" : 61 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184ef"), "student" : 4, "type" : "quiz", "score" : 28 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184f0"), "student" : 5, "type" : "exam", "score" : 1 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184f1"), "student" : 5, "type" : "essay", "score" : 17 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184f2"), "student" : 5, "type" : "quiz", "score" : 96 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184f3"), "student" : 6, "type" : "exam", "score" : 25 }
+{ "_id" : ObjectId("52d59b67ca29546d82b184f4"), "student" : 6, "type" : "essay", "score" : 53 }
+Type "it" for more
+> it
+
+* received in batch size of 20 by default (actually 2 batches)
+* there is a cursor on the server that might be open (closed after 10 minutes by server)
+
+> db.scores.find().pretty()
+
+------------------------------------------------------------------------------------
+Querying using field selection
+------------------------------------------------------------------------------------
+
+* db.scores.find( whereClauseDocument)
+> db.scores.find( { type: "essay" } )
+	return documents where field type is "essay"
+> db.scores.find( { type: "essay" }, { "_id": 0, "type": 0 } )
+> db.scores.find({ student: 19 })
+{ "_id" : ObjectId("52d59b67ca29546d82b1851a"), "student" : 19, "type" : "exam", "score" : 65 }
+{ "_id" : ObjectId("52d59b67ca29546d82b1851b"), "student" : 19, "type" : "essay", "score" : 72 }
+{ "_id" : ObjectId("52d59b67ca29546d82b1851c"), "student" : 19, "type" : "quiz", "score" : 61 }
+> db.scores.find({ student: 19, type: "essay" }, { type:0, _id:0 })
+{ "student" : 19, "score" : 72 }
+
+Quiz:
+> db.scores.find( { type: "essay", score: 50 }, { student:true, _id:false})
+{ "student" : 15 }
+{ "student" : 101 }
+{ "student" : 346 }
+{ "student" : 351 }
+{ "student" : 727 }
+{ "student" : 783 }
+{ "student" : 840 }
+{ "student" : 963 }
+
+------------------------------------------------------------------------------------
+Querying using $gt and $lt - query operators
+------------------------------------------------------------------------------------
+
+* wanted to get all documents where score > 95
+> db.scores.find( { score: { $gt: 95 } }, {_id:0})
+> db.scores.find({ score: { $gt: 95 }, type: "essay" }, {_id:0})
+> db.scores.find({ score: { $gt: 95, $lte: 98 }, type: "essay" }, {_id:0})
+> db.scores.find({ score: { $gte: 95, $lt: 98 }, type: "essay" }, {_id:0})
+
+Quiz:
+db.scores.find({score: { $gte: 50, $lte: 60 }})
+
+------------------------------------------------------------------------------------
+Inequalities on strings
+------------------------------------------------------------------------------------
+
+db.people.insert({name:"Smith", age:30, profession: "hacker"});
+db.people.insert({name:"Jones", age:35, profession: "baker"});
+db.people.insert({name:"Alice"});
+db.people.insert({name:"Bob"});
+db.people.insert({name:"Charlie"});
+db.people.insert({name:"Dave"});
+db.people.insert({name:"Edgar"});
+db.people.insert({name:"Fred"});
+
+> db.people.find({name: { $lt: "D" }})
+{ "_id" : ObjectId("52d5a002ca29546d82b19099"), "name" : "Alice" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909a"), "name" : "Bob" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909b"), "name" : "Charlie" }
+
+> db.people.find({name: { $lt: "D", $gt:"B" }}) 
+{ "_id" : ObjectId("52d5a002ca29546d82b1909a"), "name" : "Bob" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909b"), "name" : "Charlie" }
+
+* mongodb has zero knowledge of locales
+	- sorts according to the total ordering of the UTF-8 code units
+	- that is, according to a lexicographic sorting of the bytes in the UTF-8 representation of the string 
+	- this happens to be correct only in the posix, or C-locales (compares and sorts things in a ASCII-betically correct fashion)
+	- a future release of mongodb is likely to have better support for locale-aware sorting
+	- different documents in the same collection may have different value types for the same field because mongodb is
+	  a schemaless db
+	  e.g. db.people.insert({name:42}) <-- database stores this no problem
+	- all comparison operations in mongodb are strongly typed (and dynamically typed)
+		(if perform comparison, only see documents that is of the same type you used in where clause)
+		(e.g. if use string, won't see numeric types in results)
+		comparisons do not cross data-type boundaries - not a good practice to store multiple types for same field name
+
+Quiz:
+db.users.find({name: {$gte: "F", $lte: "Q"}});
+db.users.find({name: {$lte: "Q", $gte: "F"}});
+
+------------------------------------------------------------------------------------
+Using regexes, $exists, $type
+------------------------------------------------------------------------------------
+
+> db.people.find({ profession: { $exists: true }});
+{ "_id" : ObjectId("52d5a042ca29546d82b1909f"), "name" : "Smith", "age" : 30, "profession" : "hacker" }
+{ "_id" : ObjectId("52d5a044ca29546d82b190a0"), "name" : "Jones", "age" : 35, "profession" : "baker" }
+
+> db.people.find({ profession: { $exists: 0 }});
+
+> db.people.find({ name: { $type:2 }});
+	find all where name type is a string (2 is string in bson spec (\x02)
+> db.people.find({ name: { $type:1 }});
+{ "_id" : ObjectId("52d5a213ca29546d82b190a1"), "name" : 42 }
+	find all where name type is a floating point (i.e. our number)
+
+* libpc-re - regular expression library (perl-style)
+* regular expressions are slower (not as optimized as string equality)
+* however, if it starts with a ^, it can be optimized
+> db.people.find({ name: { $regex: "a" }})
+{ "_id" : ObjectId("52d5a002ca29546d82b1909b"), "name" : "Charlie" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909c"), "name" : "Dave" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909d"), "name" : "Edgar" }
+
+> db.people.find({ name: { $regex: "e$" }}) 
+	field ends with an e
+> db.people.find({ name: { $regex: "^A" }})
+	field starts with an A (this is optimized)
+{ "_id" : ObjectId("52d5a002ca29546d82b19099"), "name" : "Alice" }
+
+quiz:
+db.users.find( { name: { $regex: "q" }, email: { $exists: true } })
+
+------------------------------------------------------------------------------------
+Using $or - prefix operator (takes an array of documents and ORs them) - union
+------------------------------------------------------------------------------------
+
+> db.people.find( { $or: [ {name: { $regex: "e$" }}, {age: { $exists:1}} ] })
+{ "_id" : ObjectId("52d5a002ca29546d82b19099"), "name" : "Alice" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909b"), "name" : "Charlie" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909c"), "name" : "Dave" }
+{ "_id" : ObjectId("52d5a042ca29546d82b1909f"), "name" : "Smith", "age" : 30, "profession" : "hacker" }
+{ "_id" : ObjectId("52d5a044ca29546d82b190a0"), "name" : "Jones", "age" : 35, "profession" : "baker" }
+
+* in the shell the matching bracket will be blue in color
+* ... from shell means the shell couldn't parse your expression (hit enter twice or ctrl-c)
+
+Quiz:
+db.scores.find( { $or: [ { score: { $lt:50}}, { score: { $gt: 90}}  ]} )
+
+------------------------------------------------------------------------------------
+Using $and - logical conjunction
+------------------------------------------------------------------------------------	
+
+> db.people.find( { $and: [ {name: { $gt: "C" }}, {name: { $regex:"a"}} ] })
+{ "_id" : ObjectId("52d5a002ca29546d82b1909b"), "name" : "Charlie" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909c"), "name" : "Dave" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909d"), "name" : "Edgar" }
+
+* somewhat infrequently used operator because you can express more simply
+> db.people.find( {name: { $gt: "C", $regex: "a" }}); 
+	has same effect as $and above
+{ "_id" : ObjectId("52d5a002ca29546d82b1909b"), "name" : "Charlie" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909c"), "name" : "Dave" }
+{ "_id" : ObjectId("52d5a002ca29546d82b1909d"), "name" : "Edgar" }
+
+* usually the 2nd example is a bit more performant than the first
+db.scores.find( { score : { $gt : 50 }, score : { $lt : 60 } } );
+	- find all documents with score < 60
+	- the 2nd occurrence of score replaces the first one
+	- you'd have to use the above 2 examples ($and or merge $gt and $lt)
+
+------------------------------------------------------------------------------------
+Querying inside arrays
+------------------------------------------------------------------------------------
+
+db.accounts.insert( { name: "George", favorites: [ "ice cream", "pretzels" ] });
+db.accounts.insert( { name: "Howard", favorites: [ "pretzels", "beer" ] });
+
+> db.accounts.find( { favorites: "pretzels" })
+{ "_id" : ObjectId("52d5aacfca29546d82b190a2"), "name" : "George", "favorites" : [  "ice cream",  "pretzels" ] }
+{ "_id" : ObjectId("52d5aad0ca29546d82b190a3"), "name" : "Howard", "favorites" : [  "pretzels",  "beer" ] }
+
+* matching is polymorphic over array and non-array like values - searches in an array for a value as well
+	only look at the top-level of depth, can't recursively look down nested documents
+
+> db.accounts.find( { favorites: "beer", name: { $gt: "H" } })
+{ "_id" : ObjectId("52d5aad0ca29546d82b190a3"), "name" : "Howard", "favorites" : [  "pretzels",  "beer" ] }
+
+Quiz:
+db.products.find({tag:"shiny"});
+{_id:42, name:"blah", tags: [ ..., "shiny"]}
+{_id:1040, name"blah2", tags: "shiny"}
+
+------------------------------------------------------------------------------------
+Using $in and $all with arrays
+------------------------------------------------------------------------------------
+
+db.accounts.insert( { name: "Irving", favorites: [ "beer", "pretzels", "cheese" ] });
+db.accounts.insert( { name: "John", favorites: [ "beer", "cheese" ] });	
+
+> db.accounts.find( { favorites: { $all: [ "beer", "pretzels"] }});
+{ "_id" : ObjectId("52d5aad0ca29546d82b190a3"), "name" : "Howard", "favorites" : [  "pretzels",  "beer" ] }
+{ "_id" : ObjectId("52d5ac8cca29546d82b190a4"), "name" : "Irving", "favorites" : [  "beer",  "pretzels",  "cheese" ] }
+
+* $all - matches any document that has all of the specified elements inside the array of the field you are looking at
+	- elements can occur in any order
+	- the operand on the right-hand side of the $all has to be a subset of things that are the values of the field that is queried on
+
+* $in - takes a list of strings and returns only those documents that contain at least one of them
+
+> db.accounts.find({name: { $in: [ "Howard", "John"] }});
+{ "_id" : ObjectId("52d5aad0ca29546d82b190a3"), "name" : "Howard", "favorites" : [  "pretzels",  "beer" ] }
+{ "_id" : ObjectId("52d5ac8eca29546d82b190a5"), "name" : "John", "favorites" : [  "beer",  "cheese" ] }
+
+> db.accounts.find({ favorites: { $in: [ "beer", "ice cream" ]}});
+{ "_id" : ObjectId("52d5aacfca29546d82b190a2"), "name" : "George", "favorites" : [  "ice cream",  "pretzels" ] }
+{ "_id" : ObjectId("52d5aad0ca29546d82b190a3"), "name" : "Howard", "favorites" : [  "pretzels",  "beer" ] }
+{ "_id" : ObjectId("52d5ac8cca29546d82b190a4"), "name" : "Irving", "favorites" : [  "beer",  "pretzels",  "cheese" ] }
+{ "_id" : ObjectId("52d5ac8eca29546d82b190a5"), "name" : "John", "favorites" : [  "beer",  "cheese" ] }
+
+Quiz:
+db.users.find({friends: { $all: ["Joe", "Bob"]}, favorites: { $in: [ "running", "pickles" ]}})
+{ name : "Cliff" , friends : [ "Pete" , "Joe" , "Tom" , "Bob" ] , favorites : [ "pickles", "cycling" ] }
+
+------------------------------------------------------------------------------------
+Queries with dot notation
+------------------------------------------------------------------------------------
+
+* documents can nest
+
+db.users.insert({name:"richard", email: { work: "richard@10gen.com", personal: "kreuter@example.com" }});
+> db.users.findOne()
+{
+	"_id" : ObjectId("52d5af46ca29546d82b190a6"),
+	"name" : "richard",
+	"email" : {
+		"work" : "richard@10gen.com",
+		"personal" : "kreuter@example.com"
+	}
+}
+
+* can search for nested values by typing exact (reverse order won't work)
+> db.users.find({ email: { work: "richard@10gen.com", personal: "kreuter@example.com" }});
+{ "_id" : ObjectId("52d5af46ca29546d82b190a6"), "name" : "richard", "email" : { "work" : "richard@10gen.com", "personal" : "kreuter@example.com" } }
+
+* reversing doesn't work
+> db.users.find({ email: { personal: "kreuter@example.com", work: "richard@10gen.com" }});
+
+* this does not work either
+> db.users.find({ email: { work: "richard@10gen.com" }});
+
+* this does work (must surround key with quotes)
+> db.users.find({ "email.personal": "kreuter@example.com", "email.work": "richard@10gen.com" });
+{ "_id" : ObjectId("52d5af46ca29546d82b190a6"), "name" : "richard", "email" : { "work" : "richard@10gen.com", "personal" : "kreuter@example.com" } }
+
+Quiz:
+{ product : "Super Duper-o-phonic", 
+  price : 100000000000,
+  reviews : [ { user : "fred", comment : "Great!" , rating : 5 },
+              { user : "tom" , comment : "I agree with Fred, somewhat!" , rating : 4 } ],
+  ... }
+db.catalog.find({ price: { $gt: 10000}, "reviews.rating": { $gte:5} })
+
+------------------------------------------------------------------------------------
+Querying, Cursors
+------------------------------------------------------------------------------------
+
+* when you execute a query a cursor is constructed and returned in the shell
+* The shell is configured to print out cursors by iterating through all of the elements that are retrieved from that cursor
+  and printing out those elements
+* you can hold onto the cursor
+	cur = db.people.find(); null; //the null makes it so that the assignment won't print out stuff (it is meaningless)
+	- cur is a variable that holds onto the cursor object	
+methods:
+
+> cur.hasNext();
+	- returns true as long as there is a document
+> cur.next()
+	- shows next document
+> while (cur.hasNext()) printjson(cur.next());
+
+* restablish the cursor by redeclaring it
+> cur = db.people.find();
+
+* so long as you haven't stepped through the cursor or checked to see if you any documents are left, you can establish a limit
+  for the cursor
+> cur.limit(5); null;
+	- instructs the server to only return that many documents for this cursor
+	- limit also returns the cursor (we tacked on null)
+	- at this point we are modifying the query that is going to be sent to db; until we retrieve some docs or check to see
+	  if any docs are left on this cursor, no transmission has been made to db and no query has been executed on db yet
+	- when we do, limit is sent over 
+	- thus while (cur.hasNext()) printjson(cur.next) will stop returning results at the limit (5 total documents)
+
+> cur.sort({name: -1}); null; //sort also returns the cursor; -1 means reverse order
+	- instructs the db to return documents in an order that is specified by the sort clause
+	
+* put limit and sort together
+> cur.sort({name: -1}).limit(3); null; //both operations return the cursor so you can chain them
+
+* sort and limit modify the information that is transmitted to the db; can't apply these methods to the cursor after 
+  having begun retrieving docs from the db or checking with hasNext()
+* they are processed by server-side 
+
+> cur.sort({name: -1}).limit(3).skip(2); //null (skips first 2)
+	- in server, they are processed in same order as specified (sort, limit, skip)
+	
+Quiz:
+cur = db.scores.find({type:"exam"); null;
+cur.sort({score:-1}).limit(20).skip(50); null;
+while (cur.hasNext()) printjson(cur.next());
+or
+db.scores.find( { type : "exam" } ).sort( { score : -1 } ).skip(50).limit(20)
+	
+
+------------------------------------------------------------------------------------
+Counting results
+------------------------------------------------------------------------------------
+
+> db.scores.count({type:"exam"})
+1000
+
+Quiz:
+db.scores.count({type:"essay", score: { $gt: 90}})
+
+------------------------------------------------------------------------------------
+Wholesale Updating of a Document
+------------------------------------------------------------------------------------
+
+* in the mongo shell, the API for updating does 4 different things (update())
+	1.  wholesale replacement of documents
+	2.  manipulations of fields in a document
+	3.  an upsert - update or insert if not present
+	4.  it can update multiple documents
+* everything you learned about find is applicable to update
+* first argument is a query - where clause
+* 2nd argument is a document - replaces everything but the primary key of the document being updated with new values
+
+> db.people.update({ name: "Smith" }, {name:"Thompson", salary: 5000});
+before: { "_id" : ObjectId("52d5a042ca29546d82b1909f"), "name" : "Smith", "age" : 30, "profession" : "hacker" }
+after: { "_id" : ObjectId("52d5a042ca29546d82b1909f"), "name" : "Thompson", "salary" : 5000 }
+
+* this is somewhat dangerous (there is another way - more later)
+
+------------------------------------------------------------------------------------
+Using the $set command
+------------------------------------------------------------------------------------
+
+* to set a specific field, use $set (set is efficient)
+> db.people.update({name:"Alice"}, {$set: { age: 30 }});
+> db.people.find({name: "Alice"})
+{ "_id" : ObjectId("52d5a002ca29546d82b19099"), "age" : 30, "name" : "Alice" }
+
+> db.people.update({name:"Alice"}, {$set: { age: 31 }});
+> db.people.find({name: "Alice"})
+{ "_id" : ObjectId("52d5a002ca29546d82b19099"), "age" : 31, "name" : "Alice" }
+
+* add the amount (modifies a field in the document, whether it exists or not)
+> db.people.update({name:"Alice"}, {$inc: { age: 31 }});
+> db.people.find({name: "Alice"})
+{ "_id" : ObjectId("52d5a002ca29546d82b19099"), "age" : 62, "name" : "Alice" }
+> db.people.update({name:"Bob"}, {$inc: { age: 1 }});
+> db.people.find({name: "Bob"})
+{ "_id" : ObjectId("52d5a002ca29546d82b1909a"), "age" : 1, "name" : "Bob" }
+
+Quiz: (make sure to hit enter key before hitting submit)
+db.users.update({_id: "myrnarackham"}, { $set: { country: "RU"}});
+
+------------------------------------------------------------------------------------
+Using the $unset command
+------------------------------------------------------------------------------------
+
+* removing a field and it's value from a document (use 1/0 or true/false)
+
+> db.people.update({name:"Jones"}, {$unset:{profession:1}})
+before: { "_id" : ObjectId("52d5a044ca29546d82b190a0"), "name" : "Jones", "age" : 35, "profession" : "baker" }
+after: { "_id" : ObjectId("52d5a044ca29546d82b190a0"), "age" : 35, "name" : "Jones" }
+
+Quiz: (make sure to hit enter key before hitting submit)
+db.users.update({_id:"jimmy"}, { $unset: { interests: 1 }});
+
+------------------------------------------------------------------------------------
+Using $push, $pop, $pull, $pushAll, $pullAll, $addToSet
+------------------------------------------------------------------------------------
+
+* operators that manipulate arrays inside a document
+
+> db.arrays.insert({_id:0, a: [1,2,3,4]});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  1,  2,  3,  4 ] }
+
+* change an element (index = 2 here) value
+> db.arrays.update({_id:0}, {$set: { "a.2":5}});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  1,  2,  5,  4 ] }
+
+* to add an element to right-side of array using $push
+> db.arrays.update({_id:0}, {$push: { a:6 }});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  1,  2,  5,  4,  6 ] }
+
+* remove right-most element using $pop
+> db.arrays.update({_id:0}, {$pop: { a: 1 }});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  1,  2,  5,  4 ] }
+
+* remove left-most element using $pop
+> db.arrays.update({_id:0}, {$pop: { a: -1 }});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  2,  5,  4 ] }
+
+* add multiple element with $pushAll
+> db.arrays.update({_id:0}, {$pushAll: { a: [7,8,9]}});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  2,  5,  4,  7,  8,  9 ] }
+
+* removes a value no matter what the location is using $pull
+> db.arrays.update({_id:0}, {$pull: {a:5}});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  2,  4,  7,  8,  9 ] }
+
+* remove multiples using $pullAll
+> db.arrays.update({_id:0}, {$pullAll: { a: [2,4,8]}});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  7,  9 ] }
+
+* treat an array as a set (no duplicates) - if element exists, does nothing
+> db.arrays.update({_id:0}, {$addToSet: {a:5}});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  7,  9,  5 ] }
+> db.arrays.update({_id:0}, {$addToSet: {a:5}});
+> db.arrays.find();
+{ "_id" : 0, "a" : [  7,  9,  5 ] }
+
+Quiz:
+{ _id: "Mike", interests : [ "botany", "skydiving", "skydiving", "skiing" ] }
+
+------------------------------------------------------------------------------------
+Upserts - update or insert if not present
+------------------------------------------------------------------------------------
+
+* if no document matches the where clause, then $set would have no affect (unless upsert is true)
+
+> db.people.update({name:"George"}, {$set: {age:40}}, {upsert:true});
+> db.people.find({name:"George"});
+{ "_id" : ObjectId("52d6faef888deee53b92349a"), "age" : 40, "name" : "George" }
+
+Quiz:
+db.foo.update({username:'bar'}, {'$set':{'interests':['cat', 'dog']}}, {upsert: true} );
+	- collection is empty
+{ "_id" : ObjectId("507b78232e8dfde94c149949"), "interests" : [ "cat", "dog" ], "username" : "bar" }
+
+------------------------------------------------------------------------------------
+Multi-update
+------------------------------------------------------------------------------------
+
+* the update operator can affect more than one document at a time
+* to give every person a new field, use the empty document {} acts as a selector that matches every doc in the collection
+
+> db.people.update({}, { $set: { title: "Dr" }}, {multi:true});
+
+* by default, even if the first argument to update is a query spec that would match every document, the update method 
+  only affects the top document; you have to supply { multi: true} to have it traverse every document in the collection
+  
+* inside of mongodb, there is a single thread for each operation that is being executed.
+	for instance, this update operation will happen sequentially inside a single thread.
+	However every write operation that affects more than one document is carefully coded in a 
+	cooperative multi-tasking fashion to occasionally yield control to allow other operations
+	to affect the same data set.
+	
+	In particular, the multi-update above affected approx 10 docs; it would be possible if there were
+	other writes coming into the system, for that update to affect 3 docs, then pause to allow others,
+	then continue, etc.  We cause this pausing "yielding" because there is a shared resource that
+	different write operations share (e.g. mutex-lock)
+	
+	This is a concurrency consequence - not an isolated write operation affecting multi docs
+		however do guarantee that an individual document manipulation is always atomic with respect to any
+		concurrent readers or writers (won't see a document half updated)
+		(i.e. no isolated transactions while update is occurring)
+		
+Quiz:
+db.scores.update({score:{$lt:70}}, {$inc: {score: 20}}, {multi:true});
+	 
+------------------------------------------------------------------------------------
+Removing Data
+------------------------------------------------------------------------------------  
+
+* deleting documents from the database
+* remove() - works like find
+	- no argument - all documents are removed
+	
+> db.people.remove()
+	removes all
+> db.people.remove({ name: "Alice"})
+	removes alice
+> db.people.remove({name: {$gt:"M"})
+	removes william and thompson
+	
+* drop() drops a collection
+	- difference between drop() and remove() is really mostly an implementation detail
+		* removing each requires a one-by-one update for each state
+			- indexes are preserved
+			- not atomic multi-transaction with respect to other readers/writers
+			- each individual document removal is atomic (no half-removed document)
+		* dropping the collection requires freeing up some much larger data structures - faster than removing
+			- indexes get discarded
+
+> db.people.drop()
+
+Quiz:
+db.scores.remove({score:{$lt:60}});
+
+------------------------------------------------------------------------------------
+getLastError
+------------------------------------------------------------------------------------ 
+
+* the shell is an interactive environment
+* always tell you if the last operation succeeded or failed and gives some information about what happened
+* you can programmatically check use a command
+> db.runCommand({getLastError:1});
+	returns outcome of the last operation that was sent on the connection that you are using
+	results of it is a document
+		err - non-null value containing an error message
+			if null, means the last operation succeeded
+
+* getLastError is available in both the shell and the driver as a way of checking if a write operation succeeded or failed
+* for updates
+> db.people.update( {}, {$set:{title:"Dr"}},{multi:true});
+> db.runCommand({getLastError:1});
+{
+	"updatedExisting": true, 	//tells you that some records existed that were updated
+	"n": 2, 					//there were 2 of them that were updated
+	"err": null,				//the update succeeded (no error)
+	"ok": 1,					//success
+	...
+}
+
+> db.people.update({name:"Thompson"}, {$set:{title:"Dr"}}, {upsert:true});
+> db.runCommand({getLastError:1});
+{
+	"updatedExisting": false, 	//no records were updated
+	"upserted":	ObjectId(xxx),	//this object was inserted
+	"n": 1, 					//one object inserted
+	"err": null,				//the update succeeded (no error)
+	...
+}
+	
+> db.people.remove()
+> db.runCommand({getLastError:1});
+{ "n" : 3, "connectionId" : 16, "err" : null, "ok" : 1 } //three records were removed
+
+------------------------------------------------------------------------------------
+Java Driver: Representing documents
+------------------------------------------------------------------------------------
+
+* DBObject is an interface that is a Map-Like thing (not truly a Map)
+* concrete class called BasicDBObject (implements DBObject)
+* DBObject is the type of all the parameters to all 4 methods
+	- used for representing sort criteria that we pass to find
+* BasicDBObject extends LinkedHashMap (guarantees insertion order)
+
+Crud
+----
+insert(DBObject mapLikeObject)
+find
+update
+remove
+
+sample program
+--------------------------------------------------------------------
+package week.two.examples;
+
+import java.util.Arrays;
+import java.util.Date;
+
+import com.mongodb.BasicDBObject;
+
+public class DocumentationRepresentation {
+	public static void main(String[] args) {
+		BasicDBObject doc = new BasicDBObject();
+		doc.put("username", "yourname");
+		doc.put("birthdate", new Date(39282345));
+		doc.put("programmer", true);
+		doc.put("age", 8);
+		doc.put("languages", Arrays.asList("Java", "C++"));
+		
+		//add sub-document
+		doc.put("address", new BasicDBObject("street", "20 Main")
+			.append("zip", "90210"));
+		
+	}
+}
+--------------------------------------------------------------------
+
+Quiz:
+new BasicDBObject("_id", "user1").append("interests", Arrays.asList("basketball", "drumming"));
+
+------------------------------------------------------------------------------------
+Java Driver: Insert
+------------------------------------------------------------------------------------
+
+Example Program:
+--------------------------------------------------------------------
+package week.two.examples;
+
+import java.net.UnknownHostException;
+import org.bson.types.ObjectId;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.ServerAddress;
+
+public class InsertTest {
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient(new ServerAddress("localhost", 27017));
+		DB courseDb = client.getDB("course");
+		DBCollection collection =  courseDb.getCollection("insertTest");
+		
+		//ensure it is empty
+		collection.drop();
+		
+		DBObject document = new BasicDBObject().append("x", 1);
+		//or DBObject document = new BasicDBObject("_id", new ObjectId()).append("x", 1);
+		
+		System.out.println(document);
+		//{ "x" : 1}
+		
+		collection.insert(document);
+		
+		System.out.println(document);
+		//{ "x" : 1 , "_id" : { "$oid" : "52dcd605e4b091de1574a55a"}}
+	}
+}
+--------------------------------------------------------------------
+
+shell: $ mongo course (yjemin did this to launch with database)
+> db
+m101
+> use course
+switched to db course
+> db
+course
+> db.insertTest.find()
+{ "_id" : ObjectId("52dcd72de4b09b90e7a95c0d"), "x" : 1 }
+
+Inserting Multiple Documents:
+--------------------------------------------------------------------
+
+public class InsertTest2 {
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient(new ServerAddress("localhost", 27017));
+		DB courseDb = client.getDB("course");
+		DBCollection collection =  courseDb.getCollection("insertTest");
+		
+		//ensure it is empty
+		collection.drop();
+		
+		DBObject document = new BasicDBObject().append("x", 1);
+		DBObject document2 = new BasicDBObject("_id", new ObjectId()).append("x", 2);
+		
+		collection.insert(Arrays.asList(document, document2));
+	}
+}
+
+shell:
+
+> db.insertTest.find()
+{ "_id" : ObjectId("52dcd72de4b09b90e7a95c0d"), "x" : 1 }
+> db.insertTest.find()
+{ "_id" : ObjectId("52dcd7f2e4b03597c7379fde"), "x" : 1 }
+{ "_id" : ObjectId("52dcd7f2e4b03597c7379fdd"), "x" : 2 }
+
+Inserting duplicate document:
+--------------------------------------------------------------------
+public class InsertTest3 {
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient(new ServerAddress("localhost", 27017));
+		DB courseDb = client.getDB("course");
+		DBCollection collection =  courseDb.getCollection("insertTest");
+		
+		//ensure it is empty
+		collection.drop();
+		
+		DBObject document = new BasicDBObject().append("x", 1);
+		
+		collection.insert(document);
+		collection.insert(document);
+		
+		//Exception in thread "main" com.mongodb.MongoException$DuplicateKey: 
+		//E11000 duplicate key error index: course.insertTest.$_id_  dup 
+		//key: { : ObjectId('52dcd8d5e4b09cf486dca2fb') 
+	}
+}
+
+Quiz:
+
+Do you expect the second insert below to succeed?
+
+        MongoClient client = new MongoClient();
+        DB db = client.getDB("school");
+        DBCollection people = db.getCollection("people");
+
+        DBObject doc = new BasicDBObject("name", "Andrew Erlichson")
+                .append("company", "10gen");
+
+        try {
+            people.insert(doc);      // first insert
+            doc.removeField("_id");  // remove the "_id" field
+            people.insert(doc);      // second insert
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+No, because the _id will be a duplicate in the collection
+No, because the removeField call will remove the entire document
+*Yes, because the removeField call will remove the _id key added by the driver in the first insert
+Yes, because the driver always adds a unique _id field on insert.
+		
+------------------------------------------------------------------------------------
+Java Driver: find, findOne, count
+------------------------------------------------------------------------------------
+
+* DBCursor is an Iterator
+
+
+package week.two.examples;
+
+import java.net.UnknownHostException;
+import java.util.Random;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+
+public class FindTest {
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DB db = client.getDB("course");
+		DBCollection collection =  db.getCollection("findTest");
+		
+		//ensure it is empty
+		collection.drop();
+		
+		//populate
+		for (int i = 0; i < 10; i++) {
+			collection.insert(new BasicDBObject("x", new Random().nextInt(100)));
+		}
+		
+		
+		System.out.println("Find One:");
+		DBObject one = collection.findOne();
+		System.out.println(one);
+		
+		System.out.println("\nFind all: ");
+		DBCursor cursor = collection.find();
+		try {
+			while (cursor.hasNext()) {
+				DBObject nextDoc = cursor.next();
+				System.out.println(nextDoc);
+			}
+		} finally {
+			cursor.close();
+		}
+		
+		
+		System.out.println("\nCount:");
+		long count = collection.count();
+		System.out.println(count);
+	}
+}
+
+Output:
+Find One:
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a73e"} , "x" : 46}
+
+Find all: 
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a73e"} , "x" : 46}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a73f"} , "x" : 48}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a740"} , "x" : 33}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a741"} , "x" : 63}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a742"} , "x" : 76}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a743"} , "x" : 44}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a744"} , "x" : 13}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a745"} , "x" : 91}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a746"} , "x" : 73}
+{ "_id" : { "$oid" : "52dcdcb4e4b08280f147a747"} , "x" : 96}
+
+Count:
+10
+
+Quiz:
+doc = people.findOne();
+
+------------------------------------------------------------------------------------
+Java Driver:  Query Criteria
+------------------------------------------------------------------------------------
+
+package week.two.examples;
+
+import java.net.UnknownHostException;
+import java.util.Random;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.QueryBuilder;
+
+public class FindCriteriaTest {
+	
+	public static void displayCount(DBCollection collection, DBObject criteria) {
+		System.out.println("\nCount:");
+		System.out.println(collection.count(criteria));
+	}
+	
+	public static void displayDocuments(DBCollection collection, DBObject criteria) {
+		System.out.println("\nDocuments: ");
+		DBCursor cursor = collection.find(criteria);
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+		} finally {
+			cursor.close();
+		}		
+	}
+	
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DB db = client.getDB("course");
+		DBCollection collection =  db.getCollection("findCriteriaTest");
+		
+		//ensure it is empty
+		collection.drop();
+		
+		for (int i = 0; i < 10; i++) {
+			collection.insert(
+				new BasicDBObject("x", new Random().nextInt(2))
+					.append("y", new Random().nextInt(100))
+			);
+		}
+		
+		//all documents
+		DBObject query = null; 
+		displayCount(collection, query);
+		displayDocuments(collection, query);
+		
+		//limit the criteria to x = 0
+		query = new BasicDBObject("x", 0); 
+		displayCount(collection, query);
+		displayDocuments(collection, query);
+		
+		//limit the criteria to x = 0 and y > 10 and y < 90
+		query = new BasicDBObject("x", 0).append("y", new BasicDBObject("$gt", 10).append("$lt", 90)); 
+		displayCount(collection, query);
+		displayDocuments(collection, query);
+		
+		//using QueryBuilder
+		QueryBuilder queryBuilder = QueryBuilder.start("x").is(0).and("y").greaterThan(70);
+		displayCount(collection, queryBuilder.get());
+		displayDocuments(collection, queryBuilder.get());		
+	}
+}
+
+Quiz:
+Given a collection of documents with two fields -- type and score -- what is the correct line of code to
+find all documents where type is "quiz" and score is greater than 20 and less than 90. Select all that apply. 
+shell:  db.scores.find({ type: "quiz", score: { $gt:20, $lt:90 } });
+scores.find(new BasicDBObject("score", new BasicDBObject("$gt", 20).append("$lt", 90)); 
+scores.find(QueryBuilder.start("type").is("quiz").and("score").greaterThan(20).lessThan(90).get()) 
+
+------------------------------------------------------------------------------------
+Java Driver:  Field Selection
+------------------------------------------------------------------------------------
+
+package week.two.examples;
+
+import java.net.UnknownHostException;
+import java.util.Random;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.QueryBuilder;
+
+public class FindSelectionTest {
+	
+	public static void displayCount(DBCollection collection, DBObject criteria) {
+		System.out.println("\nCount:");
+		System.out.println(collection.count(criteria));
+	}
+	
+	public static void displayDocuments(DBCollection collection, DBObject criteria, DBObject fields) {
+		System.out.println("\nDocuments: ");
+		DBCursor cursor = collection.find(criteria, fields);
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+		} finally {
+			cursor.close();
+		}		
+	}
+	
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DB db = client.getDB("course");
+		DBCollection collection =  db.getCollection("findSelectionTest");
+		
+		//random seed
+		Random rand = new Random();
+		
+		//ensure it is empty
+		collection.drop();
+		
+		//populate
+		for (int i = 0; i < 10; i++) {
+			collection.insert(
+				new BasicDBObject("x", rand.nextInt(2))
+					.append("y", rand.nextInt(100))
+					.append("z", rand.nextInt(1000))
+			);
+		}
+		
+		//using QueryBuilder (not showing the x field)
+		QueryBuilder queryBuilder = QueryBuilder.start("x").is(0).and("y").greaterThan(10).lessThan(70);
+		DBObject fields = new BasicDBObject("x", false);
+		displayCount(collection, queryBuilder.get());
+		displayDocuments(collection, queryBuilder.get(), fields);	
+		
+		//using QueryBuilder (only showing the y field)
+		fields = new BasicDBObject("y", true).append("_id", false);
+		displayCount(collection, queryBuilder.get());
+		displayDocuments(collection, queryBuilder.get(), fields);
+	}
+}
+
+Quiz:
+Given a variable named "students" of type DBCollection, which of the following lines of code 
+could be used to find all documents in the collection, retrieving only the "phoneNumber" field.
+students.find(new BasicDBObject(), new BasicDBObject("phoneNumber", 1).append("_id", 0))
+
+------------------------------------------------------------------------------------
+Java Driver:  Dot Notation
+------------------------------------------------------------------------------------
+
+package week.two.examples;
+
+import java.net.UnknownHostException;
+import java.util.Random;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.QueryBuilder;
+
+public class DotNotationTest {
+	
+	public static void displayCount(DBCollection collection, DBObject criteria) {
+		System.out.println("\nCount:");
+		System.out.println(collection.count(criteria));
+	}
+	
+	public static void displayDocuments(DBCollection collection, DBObject criteria, DBObject fields) {
+		displayCount(collection, criteria);
+		System.out.println("\nDocuments: ");
+		DBCursor cursor = collection.find(criteria, fields);
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+		} finally {
+			cursor.close();
+		}		
+	}
+	
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DB db = client.getDB("course");
+		DBCollection lines =  db.getCollection("dotNotationTest");
+		
+		//random seed
+		Random rand = new Random();
+		
+		//ensure it is empty
+		lines.drop();
+		
+		//populate
+		for (int i = 0; i < 10; i++) {
+			lines.insert(
+				new BasicDBObject("_id", i)
+					.append("start", 
+						new BasicDBObject("x", rand.nextInt(90) + 10).append("y", rand.nextInt(90) + 10)
+					)
+					.append("end", 
+						new BasicDBObject("x", rand.nextInt(90) + 10).append("y", rand.nextInt(90) + 10)
+					)
+			);
+		}
+		
+		//empty query (all results)
+		QueryBuilder queryBuilder = QueryBuilder.start();
+		DBObject fields = null;
+		displayDocuments(lines, queryBuilder.get(), fields);	
+		
+		//x > 50 (using dot notation
+		queryBuilder = QueryBuilder.start("start.x").greaterThan(50);
+		displayDocuments(lines, queryBuilder.get(), fields);
+		
+		//using with fields too
+		fields = new BasicDBObject("start.y", true).append("_id", 0);
+		displayDocuments(lines, queryBuilder.get(), fields);
+	}
+}
+
+Quiz:
+
+In the following code snippet, what do you think will happen if there exists in the
+collection a document that matches the query but does not have a key called "media.url"? 
+
+DBObject findOneUrlByMediaType(DBCollection videos, String mediaType) {
+    DBObject query = new BasicDBObject("media.type", mediaType);
+    DBObject projection = new BasicDBObject("media.url", true);
+   
+    return videos.findOne(query, projection);   
+}  
+
+It will return a document containing a single field containing the document's _id
+
+e.g. (crud does not exist as a field)
+> db.scores.find({ type: "quiz", score: { $gt:20, $lt:90 } }, {crud: 1});
+{ "_id" : ObjectId("52d59b67ca29546d82b184e3") }
+
+
+------------------------------------------------------------------------------------
+Java Driver:  Sort, Skip, and Limit
+------------------------------------------------------------------------------------
+
+package week.two.examples;
+
+import java.net.UnknownHostException;
+import java.util.Random;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.QueryBuilder;
+
+public class SortTest {
+	
+	public static void displayCount(DBCollection collection, DBObject criteria) {
+		System.out.println("\nCount:");
+		System.out.println(collection.count(criteria));
+	}
+	
+	public static void displayDocuments(
+		DBCollection collection,
+		DBObject criteria,
+		DBObject fields,
+		DBObject sortCriteria,
+		Integer skipRows,
+		Integer limitRows
+	) {
+		displayCount(collection, criteria);
+		System.out.println("\nDocuments: ");
+		DBCursor cursor = collection.find(criteria, fields).sort(sortCriteria);
+		
+		if (skipRows != null) cursor.skip(skipRows);
+		if (limitRows != null) cursor.limit(limitRows);
+		
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+		} finally {
+			cursor.close();
+		}		
+	}
+	
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DB db = client.getDB("course");
+		DBCollection lines =  db.getCollection("sortTest");
+		
+		//random seed
+		Random rand = new Random();
+		
+		//ensure it is empty
+		lines.drop();
+		
+		//populate
+		for (int i = 0; i < 10; i++) {
+			lines.insert(
+				new BasicDBObject("_id", i)
+					.append("start", 
+						new BasicDBObject("x", rand.nextInt(90) + 10).append("y", rand.nextInt(90) + 10)
+					)
+					.append("end", 
+						new BasicDBObject("x", rand.nextInt(90) + 10).append("y", rand.nextInt(90) + 10)
+					)
+			);
+		}
+		
+		//empty query (all results)
+		QueryBuilder queryBuilder = QueryBuilder.start();
+		DBObject fields = null;
+		DBObject sortCriteria = null;
+		Integer numberOfRowsToSkip = null;
+		Integer numberOfRowsToLimit = null;
+		displayDocuments(lines, queryBuilder.get(), fields, sortCriteria, numberOfRowsToSkip, numberOfRowsToLimit);	
+		
+		//x > 50 (using dot notation) (sort ascending)
+		queryBuilder = QueryBuilder.start("start.x").greaterThan(50);
+		sortCriteria = new BasicDBObject("x", 1);
+		displayDocuments(lines, queryBuilder.get(), fields, sortCriteria, numberOfRowsToSkip, numberOfRowsToLimit);
+		
+		//using with fields too (sort descending)
+		fields = new BasicDBObject("start.y", true).append("_id", 0);
+		sortCriteria = new BasicDBObject("y", -1);
+		displayDocuments(lines, queryBuilder.get(), fields, sortCriteria, numberOfRowsToSkip, numberOfRowsToLimit);
+		
+		//skip first 2 rows
+		sortCriteria = new BasicDBObject("y", -1);
+		numberOfRowsToSkip = 2;
+		displayDocuments(lines, queryBuilder.get(), fields, sortCriteria, numberOfRowsToSkip, numberOfRowsToLimit);
+		
+		//limit to first three after skipping 2
+		numberOfRowsToLimit = 3;
+		displayDocuments(lines, queryBuilder.get(), fields, sortCriteria, numberOfRowsToSkip, numberOfRowsToLimit);		
+		
+		//sort on start.y, descending
+		sortCriteria = new BasicDBObject("start.y", -1);
+		displayDocuments(lines, queryBuilder.get(), fields, sortCriteria, numberOfRowsToSkip, numberOfRowsToLimit);	
+		
+		//sort on start.x then start.y
+		fields = null;
+		sortCriteria = new BasicDBObject("start.x", 1).append("start.y", -1);
+		displayDocuments(lines, queryBuilder.get(), fields, sortCriteria, numberOfRowsToSkip, numberOfRowsToLimit);	
+	}
+}
+
+Quiz:
+{ "_id" : 3, "value" : 20 } //skipped
+{ "_id" : 0, "value" : 10 } //skipped
+{ "_id" : 2, "value" : 7 }  //limited to 1 (this row only)
+{ "_id" : 1, "value" : 5 }
+collection.find().sort(new BasicDBObject("value", -1)).skip(2).limit(1);
+The document with _id=2
+
+------------------------------------------------------------------------------------
+Java Driver:  Update and Remove
+------------------------------------------------------------------------------------
+
+package week.two.examples;
+
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.List;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+
+public class UpdateTest {
+	public static DBCollection createCollection() throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DBCollection collection =  client.getDB("course").getCollection("updateTest");	
+		collection.drop(); //ensure empty
+		return collection;
+	}
+	
+	public static void printCollection(DBCollection collection) {
+		System.out.println("\nDocuments (total docs [" + collection.count() + "]): ");
+		DBCursor cursor = collection.find();
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+		} finally {
+			cursor.close();
+		}	
+	}
+	
+	public static void main(String[] args) throws UnknownHostException {
+		DBCollection collection = createCollection();
+		
+		//populate
+		List<String> names = Arrays.asList("alice", "bobby", "cathy", "david", "ethan");
+		for (String name : names) {
+			collection.insert(new BasicDBObject("_id", name));
+		}
+		
+		printCollection(collection);
+		
+		//add a field called age to alice
+		DBObject query = new BasicDBObject("_id", "alice");
+		collection.update(query, new BasicDBObject("age", 24)); //replaces entire document including ID
+		printCollection(collection);
+		
+		//add a field called gender to alice
+		collection.update(query, new BasicDBObject("gender", "F")); //age disappears, because document is replaced
+		printCollection(collection);
+		
+		//keep age by adding gender using $set
+		collection.update(query, new BasicDBObject("age", 24));
+		collection.update(query, new BasicDBObject("$set", new BasicDBObject("gender", "F")));
+		printCollection(collection);
+		
+		//try to update where id doesn't exist
+		query = new BasicDBObject("_id", "frank");
+		collection.update(query, new BasicDBObject("$set", new BasicDBObject("gender", "M")));
+		printCollection(collection);
+		
+		//now try with upsert (inserts it if not present) //1: query, 2: update doc, 3: upsert, 4: multi
+		collection.update(query, new BasicDBObject("$set", new BasicDBObject("gender", "M")), true, false); 
+		printCollection(collection);
+		
+		//multi insert
+		query = new BasicDBObject(); //all documents
+		collection.update(query, new BasicDBObject("$set", new BasicDBObject("title", "Dr.")), false, true); 
+		printCollection(collection);
+		
+		//remove - takes a doc that represents a query (remove alice)
+		query = new BasicDBObject("_id", "alice");
+		collection.remove(query);
+		printCollection(collection);
+		
+		//remove all
+		collection.remove(new BasicDBObject());
+		printCollection(collection);
+	}
+}
+
+Quiz:
+In the following code fragment, what is the Java expression in place of xxxx that will set the field 
+"examiner" to the value "Jones" for the document with _id of 1. Please use the $set operator. 
+# update using $set
+scores.update(new BasicDBObject("_id", 1), xxxx);
+new BasicDBObject("$set", new BasicDBObject("examiner", "Jones"))
+
+------------------------------------------------------------------------------------
+Java Driver:  findAndModify
+------------------------------------------------------------------------------------
+
+* allows you to, in one atomic operation, find a document, modify it, and return it.
+
+package week.two.examples;
+
+import java.net.UnknownHostException;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+
+public class FindAndModifyTest {
+	public static DBCollection createCollection() throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DBCollection collection =  client.getDB("course").getCollection("findAndModifyTest");	
+		collection.drop(); //ensure empty
+		
+		return collection;
+	}
+	
+	public static void printCollection(DBCollection collection) {
+		System.out.println("\nDocuments (total docs [" + collection.count() + "]): ");
+		DBCursor cursor = collection.find();
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+		} finally {
+			cursor.close();
+		}	
+	}
+	
+	public static int getRange(String counterId, int range, DBCollection collection) {
+		DBObject document = collection.findAndModify(
+			new BasicDBObject("_id", counterId),	//query
+			null,									//fields
+			null,									//sort
+			false, 									//remove
+			new BasicDBObject("$inc", new BasicDBObject("counter", range)),	//update
+			true,									//return new document
+			true									//upsert
+		);
+		
+		//document.get("counter") returns value after the range
+		
+		return (Integer) document.get("counter") - range + 1;
+	}
+	
+	public static void displayRange(int first, int numNeeded) {
+		System.out.println("Range: " + first + "-" + (first + numNeeded - 1));
+	}
+	
+	public static void main(String[] args) throws UnknownHostException {
+		DBCollection collection = createCollection();
+		
+		//service example that provides a unique ranges of numbers for a given ID
+		
+		final String counterId = "abc";
+		int first;
+		int numNeeded;
+		
+		numNeeded = 2;
+		first = getRange(counterId, numNeeded, collection);
+		displayRange(first, numNeeded);
+		
+		numNeeded = 3;
+		first = getRange(counterId, numNeeded, collection);
+		displayRange(first, numNeeded);
+
+		numNeeded = 10;
+		first = getRange(counterId, numNeeded, collection);
+		displayRange(first, numNeeded);
+		
+		printCollection(collection);
+	}
+}
+
+------------------------------------------------------------------------------------
+Blog, internals
+------------------------------------------------------------------------------------
+
+* they use IntelliJ IDE
+
+view - ftl - freemarker
+controller - model - spark-java
+
+------------------------------------------------------------------------------------
+Blog, Session Management
+------------------------------------------------------------------------------------
+
+1.  sign up using a get request (signup)
+2.  submit 4 values with a post
+	c.  write to user's table and session's table
+	b.  takes piece of information from session table to use as cookie value
+	c.  cookie value sent with redirect to welcome page and written to client
+
+------------------------------------------------------------------------------------
+Blog, User Interface
+------------------------------------------------------------------------------------	
+
+This week
+	* author signup
+	* author login
+	* author logout
+	
+How to get blog started (hw2-3.zip)
+run.sh
+	mvn compile exec:java -Dexec.mainClass=course.BlogController
+* starts on port 8082
+
+browser:  localhost:8082
+Sign Up:  localhost:8082/signup
+Welcome:  localhost:8082/welcome
+Login:    localhost:8082/login
+
+Mongo Shell:
+> use blog
+> db.users.find()
+> db.sessions.find()
+
+------------------------------------------------------------------------------------
+HW 2-1
+------------------------------------------------------------------------------------	
+mongoimport -d students -c grades < grades.js
+> use students
+> db.grades.count()
+800
+> db.grades.aggregate({'$group':{'_id':'$student_id', 'average':{$avg:'$score'}}}, {'$sort':{'average':-1}}, {'$limit':1})
+
+//view a single document
+> db.grades.findOne();
+{
+	"_id" : ObjectId("50906d7fa3c412bb040eb577"),
+	"student_id" : 0,
+	"type" : "exam",
+	"score" : 54.6535436362647
+}
+
+> db.grades.find({ type:"exam", score: { $gte: 65 } }).sort({ score: 1 });
+{ "_id" : ObjectId("50906d7fa3c412bb040eb5cf"), "student_id" : 22, "type" : "exam", "score" : 65.02518811936324 }
+{ "_id" : ObjectId("50906d7fa3c412bb040eb743"), "student_id" : 115, "type" : "exam", "score" : 65.47329199925679 }
+{ "_id" : ObjectId("50906d7fa3c412bb040eb637"), "student_id" : 48, "type" : "exam", "score" : 65.71867938396781 }
+{ "_id" : ObjectId("50906d7fa3c412bb040eb65b"), "student_id" : 57, "type" : "exam", "score" : 65.91867871499709 }
+{ "_id" : ObjectId("50906d7fa3c412bb040eb6d3"), "student_id" : 87, "type" : "exam", "score" : 66.0470217410135 }
+answer: 22
+
+------------------------------------------------------------------------------------
+HW 2-2
+------------------------------------------------------------------------------------
+Documents (total docs [800]): 
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb577"} , "student_id" : 0 , "type" : "exam" , "score" : 54.6535436362647}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb578"} , "student_id" : 0 , "type" : "quiz" , "score" : 31.95004496742112}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb579"} , "student_id" : 0 , "type" : "homework" , "score" : 14.8504576811645}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb57a"} , "student_id" : 0 , "type" : "homework" , "score" : 63.98402553675503}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb57b"} , "student_id" : 1 , "type" : "exam" , "score" : 74.20010837299897}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb57c"} , "student_id" : 1 , "type" : "quiz" , "score" : 96.76851542258362}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb57d"} , "student_id" : 1 , "type" : "homework" , "score" : 21.33260810416115}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb57e"} , "student_id" : 1 , "type" : "homework" , "score" : 44.31667452616328}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb57f"} , "student_id" : 2 , "type" : "exam" , "score" : 19.88180838833524}
+{ "_id" : { "$oid" : "50906d7fa3c412bb040eb580"} , "student_id" : 2 , "type" : "quiz" , "score" : 1.528220212203968}
+
+Reset:
+-----------------
+> use students
+> db.dropDatabase()
+mongoimport -d students -c grades < grades.js
+
+answer:
+> db.grades.aggregate({'$group':{'_id':'$student_id', 'average':{$avg:'$score'}}}, {'$sort':{'average':-1}}, {'$limit':1})
+{
+	"result" : [
+		{
+			"_id" : 54,
+			"average" : 96.19488173037341
+		}
+	],
+	"ok" : 1
+}
+
+------------------------------------------------------------------------------------
+HW 2-3
+------------------------------------------------------------------------------------
+
+download hw2-3 and modify UserDAO
+---------------------------------------------------------
+
+* modify UserDAO
+    // validates that username is unique and insert into db
+    public boolean addUser(String username, String password, String email) {
+
+        String passwordHash = makePasswordHash(password, Integer.toString(random.nextInt()));
+
+        // XXX WORK HERE
+        // create an object suitable for insertion into the user collection
+        // be sure to add username and hashed password to the document. problem instructions
+        // will tell you the schema that the documents must follow.
+        BasicDBObject document = new BasicDBObject("_id", username).append("password", passwordHash);
+
+        if (StringUtils.trimToNull(email) != null) {
+            // XXX WORK HERE
+            // if there is an email address specified, add it to the document too.
+        	document.append("email", email);
+        }
+
+        try {
+            // XXX WORK HERE
+            // insert the document into the user collection here
+        	this.usersCollection.insert(document);
+            return true;
+        } catch (MongoException.DuplicateKey e) {
+            System.out.println("Username already in use: " + username);
+            return false;
+        }
+    }
+
+    public DBObject validateLogin(String username, String password) {
+        DBObject user = null;
+
+        // XXX look in the user collection for a user that has this username
+        // assign the result to the user variable.
+        user = this.usersCollection.findOne(new BasicDBObject("_id", username));
+
+        if (user == null) {
+            System.out.println("User not in database");
+            return null;
+        }
+        
+        System.out.println("user found: " + user);
+    
+        String hashedAndSalted = user.get("password").toString();
+
+        String salt = hashedAndSalted.split(",")[1];
+
+        if (!hashedAndSalted.equals(makePasswordHash(password, salt))) {
+            System.out.println("Submitted password is not a match");
+            return null;
+        }
+
+        return user;
+    }
+
+
+start the blog
+---------------------------------------------------------
+student@javacourse1:~/java_course/eclipse_workspace/hw2_3$ ./run.sh
+[INFO] Scanning for projects...
+[INFO]                                                                         
+[INFO] ------------------------------------------------------------------------
+[INFO] Building M101J 1.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ M101J ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] Copying 5 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:2.5.1:compile (default-compile) @ M101J ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] >>> exec-maven-plugin:1.2.1:java (default-cli) @ M101J >>>
+[INFO] 
+[INFO] <<< exec-maven-plugin:1.2.1:java (default-cli) @ M101J <<<
+[INFO] 
+[INFO] --- exec-maven-plugin:1.2.1:java (default-cli) @ M101J ---
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+== Spark has ignited ...
+>> Listening on 0.0.0.0:8082
+
+download mongoproc
+---------------------------------------------------------
+* once installed - start it with
+	./mongoProc --console
+
+email> tjjenk2@gmail.com
+password> 
+Login successful
+Loading course information...
+Course(s) Loaded
+
+Courses
+1: M101J - 2014 January
+r: Refresh Grades
+e: Exit
+Choose an option> 1
+
+Weeks
+1: Week 2: CRUD
+b: Go back
+h: Go home
+M101J - 2014 January> 1
+
+Assignments
+1: Homework: Homework 2.3 (Mongoproc Beta version)
+b: Go back
+h: Go home
+M101J - 2014 January/Week 2: CRUD> 1
+
+M101J - 2014 January
+Week 2: CRUD
+Homework: Homework 2.3 (Mongoproc Beta version)
+
+Self Paced
+Attempts: 0/3
+Grade: 0/1
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 2: CRUD/Homework: Homework 2.3 (Mongoproc Beta version)> t
+Failed to test assignment
+Reason:
+Traceback (most recent call last):
+  File "<stdin>", line 13, in <module>
+ImportError: No module named pymongo
+
+****************************************************
+to fix error: (UBUNTU)
+$ wget http://pypi.python.org/packages/source/p/pymongo/pymongo-2.3.tar.gz
+$ tar xzf pymongo-2.3.tar.gz
+$ cd pymongo-2.3
+$ sudo apt-get install build-essential python-dev
+$ sudo python setup.py install
+******************************************************************************
+
+email> tjjenk2@gmail.com
+password> 
+Login successful
+Loading course information...
+Course(s) Loaded
+
+Courses
+1: M101J - 2014 January
+r: Refresh Grades
+e: Exit
+Choose an option> 1
+
+Weeks
+1: Week 2: CRUD
+b: Go back
+h: Go home
+M101J - 2014 January> 1
+
+Assignments
+1: Homework: Homework 2.3 (Mongoproc Beta version)
+b: Go back
+h: Go home
+M101J - 2014 January/Week 2: CRUD> 1
+
+M101J - 2014 January
+Week 2: CRUD
+Homework: Homework 2.3 (Mongoproc Beta version)
+
+Self Paced
+Attempts: 0/3
+Grade: 0/1
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 2: CRUD/Homework: Homework 2.3 (Mongoproc Beta version)> t
+Tested
+M101J - 2014 January
+Week 2: CRUD
+Homework: Homework 2.3 (Mongoproc Beta version)
+
+Self Paced
+Attempts: 0/3
+Grade: 0/1
+
+Feedback:
+Found the test user EcZULBK in the users collection
+
+User creation successful.
+
+User login successful.
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 2: CRUD/Homework: Homework 2.3 (Mongoproc Beta version)> 
+

@@ -1,0 +1,1479 @@
+Performance: 
+
+------------------------------------------------------------------------------------
+Indexes
+------------------------------------------------------------------------------------
+
+* performance in mongodb is driven by whether or not you are going to use an index or not
+* indexes turn out to be the single most important factor in performance
+* documents are stored into a collection in no particular order
+	- by default, the db will do a scan from beginning to end to find a document
+	- called a collection scan in mongodb (table scan in relational db)
+	- instead use indexing
+	- the index key is ordered (B-Tree)
+* thus, indexes in MongoDB are an ordered list of keys	
+* e.g. (name, hair_color, date_of_birth) - each is a key in the mongo document 
+
+	name:  			amy									john								zoe
+	hair_color:	   	brown			blonde	
+	DOB:			09/26/1977
+					pointer into collection
+					
+	- you have to give the left-most set in order to use index
+	- e.g. you cannot just give DOB, you have to start with name
+	
+* everytime you want to insert, the index needs to be updated
+* thus, reads are faster, but writes are slower
+* indexes take space on disk and take time to be updated
+* you want an index on the ways you are most likely to query the collection
+
+Example: (a, b, c) is index
+	- doing a query on b, index will not be used
+	- doing a query on a, index will be used
+	- doing a query on c, index will not be used
+	- doing a query on (a,b), index will be used
+	- doing a query on (a,c), index will be used for a only
+
+Quiz:
+Which optimization will typically have the greatest impact on the performance of a database.
+Adding more memory so that the working set fits in memory.
+Adding a faster drive so that operations that hit disk will happen more quickly.
+Replacing your CPU with a faster one (say one 2x as fast)
+*Adding appropriate indexes on large collections so that only a small percentage of queries need to scan the collection.
+
+------------------------------------------------------------------------------------
+Creating Indexes
+------------------------------------------------------------------------------------
+
+> use school
+> db.students.find().pretty()
+
+* 10 millions documents are in the school.students collection
+* playing with collection so it is probably cached in memory
+
+> db.students.find({student_id: 5});
+
+* student_id should come up early in the collection
+* because using find and not findOne, even though it should come up early, it still took 2-3 seconds to find
+* if using findOne where the db could be satisfied by the first one it finds, it will be very fast
+
+> db.students.findOne({student_id: 5})
+	was very fast because 5 is at the beginning
+> db.students.findOne({student_id: 5000000})
+	a little slower, have to go through half of collection
+> db.students.find({student_id: 5000000})
+	slow because it has to go through entire collection to find all
+
+* add an index
+> db.students.ensureIndex({student_id: 1}) <-- the 1 means ascending order, key is student_id
+	- after hitting enter, the db is looking at all the rows and builds the index
+	
+> db.students.find({student_id: 5000000}).pretty()
+	- extremely fast because the index is being used
+> db.students.find({class: 5000000}).pretty()
+	- class doesn't exist, so collection scan occurs
+	
+> db.students.ensureIndex({student_id: 1, class: -1}) <-- compound index, -1 means descending	
+	- ascending vs descending doesn't make much of a difference when searching
+	  but does make a big difference when sorting
+	
+Quiz:
+
+Please provide the mongo shell command to add an index to a collection named students, having the index key be class, student_name. 
+db.students.ensureIndex({class: 1, student_name: 1});
+
+------------------------------------------------------------------------------------
+Discovering Indexes
+------------------------------------------------------------------------------------
+
+* finding what indexes are in your database (school is our database in the example)
+> db.system.indexes.find()
+
+* every collection by default has an index on _id
+
+* index from last lesson
+{ "v" : 1, "key" : { "student_id" : 1 }, "ns" : "school.students", "name" : "student_id_1" }
+
+* if you want to see more detail about an index for a particular collection
+> db.students.getIndexes()
+
+* dropping an index
+> db.students.dropIndex({student_id: 1}) <-- need to type it exactly as you created it
+
+------------------------------------------------------------------------------------
+Multikey Indexes
+------------------------------------------------------------------------------------
+
+* in mongodb, you can have a key that holds an array
+* e.g. 
+	{ tags: [ "cycling", "tennis", "football" ],
+	  categories: [ "sports", "hobbies" ]
+
+* you can index the array (i.e. tags)
+	- ensureIndex({tags: 1})
+	- if you do that, mongodb creates a multi-key index
+	- rather than create one index key for each document, when mongodb sees the array, it will create an 
+	  index point for every item in the array (only happens if it is an array)
+	- NOTE:  you can have compound index (tags, color) and that works fine, but mongodb restricts 
+	  the query; you cannot have 2 items in a document that are both arrays if it is a multi-key index.
+	  When you first create an index on 2 things, mongodb doesn't know if there is going to be arrays
+	  in those items.  It is when you insert those items that it will stop you from inserting them if
+	  they are both arrays for the compound index.
+
+* example
+> db.bbb.insert({a:1, b:1})
+> db.bbb.ensureIndex({a:1, b:1})
+* now insert an array; at this point, it is a multi-key index
+> db.bbb.insert({a:[1,2,3], b:1})
+* now insert with b being the array; that works too
+> db.bbb.insert({a:5, b:[1,2,3]})
+* now try and insert where both are an array; does not work
+> db.bbb.insert({a:[1,2,3], b:[1,2,3]})
+cannot index parallel arrays [b] [a]
+
+Quiz:
+Suppose we have a collection foo that has an index created as follows:
+db.foo.ensureIndex({a:1, b:1})
+
+Which of the following inserts are valid to this collection?
+*db.foo.insert({a:["apples","oranges"], b:"grapes"}) 
+*db.foo.insert({a:"grapes", b:"oranges"})
+*db.foo.insert({a:"grapes", b:[8,9,10]})
+db.foo.insert({a:[1,2,3], b:[5,6,7]}) 
+
+------------------------------------------------------------------------------------
+Multikey continued
+------------------------------------------------------------------------------------
+
+* indexing is not restricted to the first level of keys within a document
+* e.g. document has an array of addresses and in those there is an array of phones
+{
+	_id: ...,
+	name: "",
+	addresses: [
+		{
+			street_address: "",
+			city: "",
+			state: "New York",
+			tag: "vacation",
+			phones: [ 1, 2, 3, 4, 5 ]
+		},
+		{
+		}
+	]
+}
+
+* if you wanted to put an index on the addresses key and then the tag in that array
+> db.people.ensureIndex({ "addresses.tag": 1})
+
+* if you wanted to put it on phones
+> db.people.ensureIndex({ "addresses.phones": 1})
+
+> db.people.getIndexes()
+{ "v" : 1, "key" : { "addresses.tag" : 1 }, "ns" : "test.people", "name" : "addresses.tag_1" }
+{ "v" : 1, "key" : { "addresses.phones" : 1 }, "ns" : "test.people", "name" : "addresses.phones_1" }
+
+* the way it works, is that mongodb will add an index element for every item in the array
+* if you change those items, it will have to change that pointer in those indexes
+
+------------------------------------------------------------------------------------
+Index Creation Option, Unique
+------------------------------------------------------------------------------------
+
+* the indexes we've created so far were not unique (key can only appear once in the index)
+
+> db.stuff.insert({thing: pear})
+> db.stuff.ensureIndex({thing:1})
+> db.stuff.insert({thing: pear})
+> db.stuff.insert({thing: apple})
+> db.stuff.getIndexes()
+> db.stuff.dropIndex({thing:1})
+> db.stuff.ensureIndex({thing:1}, {unique:1})
+error due to multiples already in collection
+> db.stuff.remove({_id: ...})
+> db.stuff.ensureIndex({thing:1}, {unique:1})
+> db.stuff.getIndexes()
+{ "v" : 1, "key" : { "thing" : 1 }, "unique" : true, "ns" : "test.people", "name" : "addresses.tag_1" }
+> db.stuff.insert({thing: apple})
+E11000 duplicate key error index: test.stuff.Sthing_1 dup key: { : "apple" }
+
+* all "_id" indexes are unique even though getIndexes() doesn't tell you they are
+
+Quiz:
+Please provide the mongo shell command to add a unique index to the collection students on the keys student_id, class_id.
+> db.students.ensureIndex({student_id:1, class_id:1}, {unique:1})
+
+------------------------------------------------------------------------------------
+Index Creation Removing Dups
+------------------------------------------------------------------------------------
+
+* what if you want to create a unique index on a collection that has existing duplicate keys
+* you can use this dangerous technique
+	- set unique: true and dropDups: true
+	- will remove all documents except for one when dups are found
+	
+> db.things.ensureIndex({thing:1}, {unique:true}, {dropDups:true});
+
+Quiz:
+If you choose the dropDups option when creating a unique index, what will the MongoDB do to documents 
+that conflict with an existing index entry?
+Move them to an archive collection.
+Unset the conflicting key so that they can be indexed and remain in the collection.
+Remove them but write the deleted documents in JSON to a special file in the log directory.
+*Delete them for ever and ever, Amen.
+
+------------------------------------------------------------------------------------
+Index Creation, Sparse
+------------------------------------------------------------------------------------
+
+* what happens if we try to create a unique index on a collection and there is more than one 
+  document missing the index key
+ 
+e.g. want to create a unique index on c for collection blah
+{ a:1, b:1, c:1 }
+{ a:2, b:2 } <-- database sees c=null
+{ a:3, b:4 } <-- database sees c=null
+	- ut oh, c is null for more than one document, so what do you do
+	- the answer is sparse indexes - only index documents that have the key set for the key being indexed
+	- thus, the first document above would be indexed, but the bottom two would not be
+	
+> db.blah.ensureIndex({c:1}, {unique:true, sparse:true})
+> db.blah.find({c:2}) <-- works as you might expect
+> db.blah.sort({c:1}) <-- doesn't work as you would expect
+	- would only return one record because the bottom two records have no key c 
+	- thus when you sort by a sparse index key, only those records that have the key will be returned
+
+Quiz:
+
+> db.people.insert({"name" : "Andrew", "title" : "Jester" });
+> db.people.insert({"name" : "Dwight", "title" : "CEO" });
+> db.people.insert({"name" : "John" });
+> db.people.ensureIndex({title:1}, {sparse:1});
+> db.people.find({title:null});
+> db.people.find({title:});
+Tue Jan 28 14:28:07.904 SyntaxError: Unexpected token }
+> db.people.find({title: ''});
+> db.people.find({title: 'null'});
+
+
+Suppose you had the following documents in a collection called people with the following docs:
+
+> db.people.find()
+{ "_id" : ObjectId("50a464fb0a9dfcc4f19d6271"), "name" : "Andrew", "title" : "Jester" }
+{ "_id" : ObjectId("50a4650c0a9dfcc4f19d6272"), "name" : "Dwight", "title" : "CEO" }
+{ "_id" : ObjectId("50a465280a9dfcc4f19d6273"), "name" : "John" }
+
+And there is an index defined as follows:
+
+db.people.ensureIndex({title:1}, {sparse:1})
+
+If you perform the following query, what do you get back, and why?
+
+db.people.find({title:null})
+
+*No documents, because the query uses the index and there are no documents with title:null in the index.
+No documents, because querying for title:null only finds documents that explicitly have title:null, regardless of the index.
+The document for John, because the query won't use the index. 
+All the documents in the collection, because title:null matches all documents.
+The document for John, because the ensureIndex command won't succeed in this case.
+
+------------------------------------------------------------------------------------
+Index Creation, Background
+------------------------------------------------------------------------------------
+
+* by default, an index is created in the foreground (i.e. blocks all other writers per db lock)
+	- this is very fast
+* with background:true
+	- slow
+	- does not block writers
+* which one should you use
+	- if by yourself, use foreground
+	- in production system and you know there are other writers in the database, you'll have to do background
+	- if in replicant set system, pull one server out of replicant set and build indexes there, and so on with the others
+
+Quiz:
+Which things are true about creating an index in the background in MongoDB. Check all that apply.
+
+*A mongod instance can only build one background index at a time per database. 
+*Although the database server will continue to take requests, a background index creation still blocks the
+	mongo shell that you are using to create the index. 
+*Creating an index in the background takes longer than creating it in the foreground 
+In Mongo 2.2 and above, indexes are created in the background by default. 
+	(there is now a per-database writer lock (instead of all the databases)) 
+
+------------------------------------------------------------------------------------
+Using Explain
+------------------------------------------------------------------------------------
+
+* explain tells you exactly what indexes were used in your queries and how they were used
+
+> for (i=0; i < 10000; i++) db.foo.insert({a:i, b:i, c:i});
+> db.foo.find()
+{ "_id" : ObjectId("52e8072deb4fee2e688f6604"), "a" : 0, "b" : 0, "c" : 0 }
+{ "_id" : ObjectId("52e8072deb4fee2e688f6605"), "a" : 1, "b" : 1, "c" : 1 }
+{ "_id" : ObjectId("52e8072deb4fee2e688f6606"), "a" : 2, "b" : 2, "c" : 2 }
+{ "_id" : ObjectId("52e8072deb4fee2e688f6607"), "a" : 3, "b" : 3, "c" : 3 }
+{ "_id" : ObjectId("52e8072deb4fee2e688f6608"), "a" : 4, "b" : 4, "c" : 4 }
+{ "_id" : ObjectId("52e8072deb4fee2e688f6609"), "a" : 5, "b" : 5, "c" : 5 }
+...
+> db.foo.ensureIndex({a:1, b:1, c:1});
+> db.foo.find({c:1})
+{ "_id" : ObjectId("52e8072deb4fee2e688f6605"), "a" : 1, "b" : 1, "c" : 1 }
+> db.foo.find({c:1}).explain();
+{
+	"cursor" : "BasicCursor", 				<-- means it could not use the index
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 10000,
+	"nscanned" : 10000,
+	"nscannedObjectsAllPlans" : 10000,
+	"nscannedAllPlans" : 10000,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 8,							<-- how long it took in milliseconds to execute the query
+	"indexBounds" : {
+		
+	},
+	"server" : "javacourse1:27017"
+}
+> db.foo.find({a:1}).explain();
+{
+	"cursor" : "BtreeCursor a_1_b_1_c_1",	<-- used an index
+	"isMultiKey" : false,					<-- none of the values in a,b,c are arrays, so this is not multikey
+	"n" : 1,								<-- number of documents that is returned
+	"nscannedObjects" : 1,					<-- number of documents that were scanned to answer the query
+	"nscanned" : 1,							<-- number of index entries or docs that were looked at
+	"nscannedObjectsAllPlans" : 1,
+	"nscannedAllPlans" : 1,
+	"scanAndOrder" : false,
+	"indexOnly" : false,					<-- tells us whether or not query could be satisfied with just the index (if true doc itself will not need to be accessed)
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {						<-- shows the bounds that were used to look up the index
+		"a" : [
+			[
+				1,
+				1
+			]
+		],
+		"b" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		],
+		"c" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+> db.foo.find({a:9999}, {a:1,b:1,_id:0});
+{ "a" : 9999, "b" : 9999 }
+> db.foo.find({a:9999}, {a:1,b:1,_id:0}).explain();
+{
+	"cursor" : "BtreeCursor a_1_b_1_c_1",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 0,
+	"nscanned" : 1,
+	"nscannedObjectsAllPlans" : 0,
+	"nscannedAllPlans" : 1,
+	"scanAndOrder" : false,
+	"indexOnly" : true,							<-- did not need to go to the actual collection to answer the query (all info was in index)
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"a" : [
+			[
+				9999,
+				9999
+			]
+		],
+		"b" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		],
+		"c" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+
+* example: a query where mongodb cannot use the index for finding the documents, but can for sorting them
+	- we know index is on a,b,c
+> db.foo.find({$and:[{c:{$gt:250}}, {c:{ $lte:500}}]}).sort({a:1}).explain();
+{
+	"cursor" : "BtreeCursor a_1_b_1_c_1",		<-- did not use this for find, it used it for sort (see nscanned)
+	"isMultiKey" : false,
+	"n" : 250,
+	"nscannedObjects" : 250,					<-- # of documents scanned
+	"nscanned" : 9541,							<-- # of indexes or documents scanned
+	"nscannedObjectsAllPlans" : 591,
+	"nscannedAllPlans" : 9882,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 44,
+	"indexBounds" : {
+		"a" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		],
+		"b" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		],
+		"c" : [
+			[
+				250,
+				500
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+
+* change it up a bit
+> db.foo.dropIndex({a:1,b:1,c:1});
+{ "nIndexesWas" : 2, "ok" : 1 }
+> db.foo.ensureIndex({a:1,b:1});
+> db.foo.find({$and:[{c:{$gt:250}}, {c:{ $lte:500}}]}).sort({a:1}).explain();
+{
+	"cursor" : "BtreeCursor a_1_b_1",
+	"isMultiKey" : false,
+	"n" : 250,
+	"nscannedObjects" : 10000,				<-- number of scanned documents
+	"nscanned" : 10000,						<-- number of scanned indexes or documents
+	"nscannedObjectsAllPlans" : 10352,
+	"nscannedAllPlans" : 10352,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 26,
+	"indexBounds" : {
+		"a" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		],
+		"b" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+* we are positive that it did not use the index values for the find even though it scanned them all
+* since nscanned=nscannedObjects, it couldn't use the index at all for the find
+	- went right to the collection and scanned them all
+	- was able to use the btreecursor index to return them in sorted order
+
+Quiz:
+Given the following output from explain, what is the best description of what happened during the query?
+
+{
+	"cursor" : "BasicCursor",
+	"isMultiKey" : false,
+	"n" : 100000,
+	"nscannedObjects" : 10000000,
+	"nscanned" : 10000000,
+	"nscannedObjectsAllPlans" : 10000000,
+	"nscannedAllPlans" : 10000000,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 7,
+	"nChunkSkips" : 0,
+	"millis" : 5151,
+	"indexBounds" : {
+		
+	},
+	"server" : "Andrews-iMac.local:27017"
+}
+
+The query used an index called BasicCursor and returned in a 5151 microseconds.
+*The query scanned 10,000,000 documents, returning 100,000 in 5.2 seconds.
+The query scanned 100,000 documents and return in 5 milliseconds.
+The query was able to use a covered index to answer the query entirely within the index without looking at the documents.
+
+------------------------------------------------------------------------------------
+When is an Index Used
+------------------------------------------------------------------------------------
+
+* What does the database do to figure out what index it should use
+* example:
+	have a database with three indexes
+	query plan 1.  a
+	query plan 2.  b
+	query plan 3.  c
+	- database can only use one index
+	- the first time the query is run, database runs all three query plans in parallel
+	- as soon as one completes, then mongodb will return the answer to the query and memorize which query plan is faster
+	- every 100 or so queries, it will forget what it knows and run them in parallel again
+	- if you have a compound index (e.g. d,c,b,a), then in order for the database to use this index, you have to specify
+	  some left-subset of these items
+	  	d		<-- database will use it
+	  	d,c		<-- database will use it
+	  	d,b		<-- database will use it, but only for d
+	  	c,b		<-- database will not use it (you need to start with d)
+	 - this is true for sort or find
+	 - find, findOne, update, and remove can all benefit from indexes
+
+Quiz:
+Given collection foo with the following index:
+
+db.foo.ensureIndex({a:1, b:1, c:1})
+
+Which of the following queries will use the index?
+db.foo.find({b:3, c:4}) 
+*db.foo.find({a:3}) 
+*db.foo.find({c:1}).sort({a:1, b:1}) 
+	- cannot use it to satisfy the find, but can for the sort
+db.foo.find({c:1}).sort({a:-1, b:1}) 
+	- cannot use it to satisfy the find, but the sort order is reversed
+	- however using db.foo.find({c:1}).sort({a:-1}), the database would be able to reverse the sort order
+	
+------------------------------------------------------------------------------------
+How Large is your Index?
+------------------------------------------------------------------------------------
+
+* we want those indexes to be in memory, not on disk
+* how do we keep the index in memory
+* how big is an index
+> db.foo.stats();
+{
+	"ns" : "people.foo",
+	"count" : 10000,				<-- number of documents
+	"size" : 560008,				
+	"avgObjSize" : 56.0008,			<-- average document is using 56 bytes
+	"storageSize" : 1396736,		<-- collection uses about 1.4mb of space
+	"numExtents" : 5,
+	"nindexes" : 2,
+	"lastExtentSize" : 1048576,
+	"paddingFactor" : 1,
+	"systemFlags" : 0,
+	"userFlags" : 0,
+	"totalIndexSize" : 686784,		
+	"indexSizes" : {
+		"_id_" : 335216,
+		"a_1_b_1" : 351568
+	},
+	"ok" : 1
+}
+> db.foo.totalIndexSize();
+686784 (686 kb)
+> db.foo.getIndexes();
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "people.foo",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"b" : 1
+		},
+		"ns" : "people.foo",
+		"name" : "a_1_b_1"
+	}
+]
+
+Quiz:
+Is it more important that your index or your data fit into memory?
+*Index
+Data
+
+------------------------------------------------------------------------------------
+Index Cardinality
+------------------------------------------------------------------------------------
+
+* Index cardinality
+	- how many index pointer are there for each different type of index that mongodb supports
+
+MongoDB supported Indexes
+-------------------------
+1.  Regular index
+	- for every key you put in the index, there is an index pointer
+	- if there is no key, then there is an index point under the null entry
+	- you get a 1:1 index size to collection size (n-pointers to documents)
+2.  Sparse index
+	- when a document is missing the key being indexed, it is not in the index 
+		(because it's a null and we don't keep null in the index for a sparse index)
+	- so here we have index pointers that are <= # of documents
+3.  Multikey index
+	- is an index on an array value
+	- there may be multiple index points for each document
+	- thus it could be > than the number of documents
+	- the greater the array values, the more index pointers
+	
+* indexes have to be maintained
+
+Quiz:
+Let's say you update a document with a key called tags and that update causes the document to need to get moved on disk. 
+If the document has 100 tags in it, and if the tags array is indexed with a multikey index, how many index points need
+to be updated in the index to accomodate the move? Put just the number below.
+100
+
+------------------------------------------------------------------------------------
+Index Selectivity
+------------------------------------------------------------------------------------
+
+* when designing your indexes you want them to be as selective as possible
+* example:  say you are doing some logging and there are only a few types of log operations
+	save
+	open
+	run
+	put
+	get
+	- have 100 millions of these logging operations and each has a timestamp
+	- would you rather have an index (timestamp, opcode) or (opcode, timestamp)
+	- better to have (timestamp, opcode) because there are only 5 opcodes
+
+Quiz:
+Given the following attributes of automobiles: color, weight, manufacturer, odometer mileage, 
+which index is likely be the most selective, provided you can provide all four attributes on a search:
+Color
+Weight
+Manufacturer
+*Odometer Mileage
+
+------------------------------------------------------------------------------------
+Hinting an Index
+------------------------------------------------------------------------------------
+
+* if you want to tell mongodb exactly what index to use, you can do that with the hint command
+* you append it to the end of the query - give json document that tells spells out the index
+* to use no index hint({$natural:1})
+
+> db.foo.ensureIndex({a:1});
+> db.foo.ensureIndex({b:1});
+> db.foo.ensureIndex({c:1});
+> db.foo.ensureIndex({d:1});	<-- note there are no d elements
+
+> db.foo.find({a:100,b:100,c:100});
+{ "_id" : ObjectId("52e8082eeb4fee2e688f66cd"), "a" : 100, "b" : 100, "c" : 100 }
+> db.foo.find({a:100,b:100,c:100}).explain()
+{
+	"cursor" : "BtreeCursor a_1_b_1",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 1,
+	"nscanned" : 1,
+	"nscannedObjectsAllPlans" : 5,
+	"nscannedAllPlans" : 5,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"a" : [
+			[
+				100,
+				100
+			]
+		],
+		"b" : [
+			[
+				100,
+				100
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+> db.foo.find({a:100,b:100,c:100}).explain()
+{
+	"cursor" : "BtreeCursor a_1_b_1",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 1,
+	"nscanned" : 1,
+	"nscannedObjectsAllPlans" : 5,
+	"nscannedAllPlans" : 5,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"a" : [
+			[
+				100,
+				100
+			]
+		],
+		"b" : [
+			[
+				100,
+				100
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+> db.foo.find({a:100,b:100,c:100}).hint({$natural:1}).explain()
+{
+	"cursor" : "BasicCursor",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 10000,
+	"nscanned" : 10000,
+	"nscannedObjectsAllPlans" : 10000,
+	"nscannedAllPlans" : 10000,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 4,
+	"indexBounds" : {
+		
+	},
+	"server" : "javacourse1:27017"
+}
+> db.foo.find({a:100,b:100,c:100}).hint({c:1}).explain()
+{
+	"cursor" : "BtreeCursor c_1",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 1,
+	"nscanned" : 1,
+	"nscannedObjectsAllPlans" : 1,
+	"nscannedAllPlans" : 1,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"c" : [
+			[
+				100,
+				100
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+> db.foo.find({a:100,b:100,c:100}).hint({d:1})
+{ "_id" : ObjectId("52e8082eeb4fee2e688f66cd"), "a" : 100, "b" : 100, "c" : 100 }
+> db.foo.find({a:100,b:100,c:100}).hint({d:1}).explain()
+{
+	"cursor" : "BtreeCursor d_1",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 10000,
+	"nscanned" : 10000,
+	"nscannedObjectsAllPlans" : 10000,
+	"nscannedAllPlans" : 10000,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 14,
+	"indexBounds" : {
+		"d" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+> db.foo.ensureIndex({e:1}, {sparse:true})
+> db.foo.find({a:100,b:100,c:100}).hint({e:1})
+> db.foo.find({a:100,b:100,c:100}).hint({e:1}).explain()
+{
+	"cursor" : "BtreeCursor e_1",
+	"isMultiKey" : false,
+	"n" : 0,
+	"nscannedObjects" : 0,
+	"nscanned" : 0,
+	"nscannedObjectsAllPlans" : 0,
+	"nscannedAllPlans" : 0,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"e" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+
+
+Quiz:
+Given the following data in a collection:
+
+> db.people.find()
+{ "_id" : ObjectId("50a464fb0a9dfcc4f19d6271"), "name" : "Andrew", "title" : "Jester" }
+{ "_id" : ObjectId("50a4650c0a9dfcc4f19d6272"), "name" : "Dwight", "title" : "CEO" }
+{ "_id" : ObjectId("50a465280a9dfcc4f19d6273"), "name" : "John" }
+
+and the following indexex:
+
+> db.people.getIndexes()
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "test.people",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"title" : 1
+		},
+		"ns" : "test.people",
+		"name" : "title_1",
+		"sparse" : 1
+	}
+]
+
+Which query below will return the most documents.
+*db.people.find().sort({'title':1}).hint({$natural:1})
+db.people.find().sort({'title':1})
+db.people.find({name:{$ne:"Kevin"}}).sort({'title':1})
+db.people.find({'title':{$ne:null}}).hint({'title':1})
+
+------------------------------------------------------------------------------------
+Hinting in Java
+------------------------------------------------------------------------------------
+
+See java code
+
+Quiz:
+
+------------------------------------------------------------------------------------
+Efficiency of Index Use
+------------------------------------------------------------------------------------
+
+* just because you use an index doesn't mean it will get used efficiently
+* certain types of operators, $gt and $lt, may use an index, but not efficiently because they still
+  may require the inspection of lots of documents
+* negative operators, such as $ne, may also need to search lots of documents; thus not efficient
+* when searching on regexes, if you don't give something that is stemmed on the left, such as
+  /abcd/, it is slow because it cannot use the index
+  but if you stem it, /^abcd/, then it can and will use it
+> db.students({student_id: {$gt:500},class_id:20}).sort({'student_id:1}).explain()
+	- slow (3 seconds)
+	- used the student_id, class_id index
+	- has to scan 1.3 million index items (nscanned: 1341495)
+> db.students({student_id: {$gt:500},class_id:20}).sort({'student_id:1}).hint({class_id:1}).explain()
+	- faster (133 millis)
+	- the reason is because we were using $gt with student_id which is not efficient
+
+------------------------------------------------------------------------------------
+Geospacial Indexes
+------------------------------------------------------------------------------------
+
+* allows you to find things based upon location
+* 2-dimensional model (x vs y coordinates)
+* your document needs to have something like x,y stored in it
+	1.  need some sort of coordinates in the document:
+		location: [x,y]
+	2.  setup index as 2d:
+		ensureIndex({location: '2d'})
+		a.  it can be a compound index
+			ensureIndex({location: '2d', type:1})
+	3.  Use a find with $near to show all the locations near the location (increasing distance)
+		find({location: {$near: [x,y]}}).limit(#)
+
+> db.stores.ensureIndex({location: '2d', type: 1});
+> db.stores.find({location: {$near: [50,50]}})
+
+Quiz:
+Suppose you have a 2D geospatial index defined on the key location in the collection places. 
+Write a query that will find the closest three places (the closest three documents) 
+to the location 74, 140.
+db.places.find({location: {$near: [74,140]}}).limit(3)
+
+------------------------------------------------------------------------------------
+Geospacial Spherical
+------------------------------------------------------------------------------------
+
+* Geospacial locations that consider the curvature of the earth
+* locations on the earth are usually specifical by 
+	longitude 
+		- run vertical
+		- closer to equator, they are farther apart
+		- closer to a pole, they are closer together
+	latitude 
+		- run horizontal
+* if you have a person standing somewhere on the earth, what are locations near him
+* max distance is specified in radians
+* ensureIndex() <-- to specify it is of type '2d'
+* in spherical model, they have to be longitude, latitude in that order
+> db.runCommand({geoNear: 'stores', near:[50,50], spherical:true, maxDistance:1})
+	- the stores collection - has to be specified explicitly because not doing db.stores
+	- spherical:true tells the system that we are looking for the spherical model
+	- maxDistance: 1 radian; 2 pie radians all the way around the earth; 3 radians is about half way around earth
+	
+------------------------------------------------------------------------------------
+Logging Slow Queries
+------------------------------------------------------------------------------------
+
+* to debug the performance, you're going to need to do some profiling
+* mongodb automatically logs slow queries above 100ms write to the log that mongod writes to when you 
+  start up mongod
+* start default mongodb
+	$ mongod -dbpath /user/local/var/mongodb
+* do a long running query
+
+------------------------------------------------------------------------------------
+Profiling
+------------------------------------------------------------------------------------
+
+* the profiler will write entries (documents) to system.profile for any query that takes a specific amount of time
+* three levels
+	0 - off
+	1 - log slow queries
+	2 - log all queries (good for debugging)
+$ mongod -dbpath /user/local/var/mongodb --profile 1 --slowms 2
+
+> db.getProfilingLevel();
+0
+> db.system.profile.find();
+> db.system.profile.find({ns:/test.foo/}).sort({ts:1}).pretty();
+> db.system.profile.find({ns:/school.students/}).sort({ts:1}).pretty(); //sort it by timestamp
+> db.system.profile.find({millis: {$gt: 1}}).sort({ts:1}).pretty();
+> db.getProfilingStatus();
+{ "was" : 0, "slowms" : 100 }
+> db.setProfilingLevel(1, 4);
+	- level, millis
+> db.setProfilingLevel(0);
+	
+Quiz:
+Write the query to look in the system profile collection for all queries that took longer than one second,
+ordered by timestamp descending.
+db.system.profile.find({millis: {$gt: 1000}}).sort({ts:-1})
+
+------------------------------------------------------------------------------------
+Mongotop
+------------------------------------------------------------------------------------
+
+Review:
+1.  Indexes are critical to performance
+2.  Explain
+3.  Hint
+4.  Profiling
+
+* to look at high level
+* names after unix top command
+* gives high level view of where mongo is spending it's time
+* command-line tool
+
+$ mongotop 3
+	- runs for 3 seconds
+	- row for each collection; shows how much time is spend in the collection
+	- also tells read and write times
+
+------------------------------------------------------------------------------------
+Mongostat
+------------------------------------------------------------------------------------
+
+* named after iostat
+* shows how many 
+	queries per second, 
+	flushes per scond, 
+	idx miss % (miss rate to the index in memory),
+	etc.
+
+$ mongostat
+
+------------------------------------------------------------------------------------
+Sharding Overview
+------------------------------------------------------------------------------------
+
+* technique for splitting up a large collection amongst multiple servers
+* when you shard, you deploy multiple mongodb servers
+* at the front you have a mongos = router (which talks to the mongod servers)
+
+					application
+						 |
+					  mongos
+			|		   |           |            |
+		Server-A	Server-B	Server-C	 Server-D
+     (replica set)
+     
+* a replica set keeps the data in sync across several instances so that if one goes down,
+  you won't lose your data
+* the way mongo shards is that you choose a shard key (e.g. student_id)
+* an insert must include the shard key (the entire shard key if compound key)
+* for an update, remove, or find, if mongos is not given the shard key, it will have to broadcast to
+  all the servers
+* if you know the shard key, you should specify it because you'll get better performance because 
+  you'll only be using one of the servers
+
+------------------------------------------------------------------------------------
+Homework 4.1
+------------------------------------------------------------------------------------
+
+shell test setup:
+> use people
+switched to db people
+> db.hw4_1.insert({sku: 'aa', price: 100.25, description: 'aa desc', category: 'cat_1', brand: 'brand_1', reviews: { author: 'auth_1' }});
+> db.hw4_1.insert({sku: 'bb', price: 88.25, description: 'bb desc', category: 'cat_2', brand: 'brand_2', reviews: { author: 'auth_2' }});
+> db.hw4_1.ensureIndex({sku:1});
+> db.hw4_1.ensureIndex({price:-1});
+> db.hw4_1.ensureIndex({description:1});
+> db.hw4_1.ensureIndex({category:1,brand:1});
+> db.hw4_1.ensureIndex({"reviews.author":1});
+> db.hw4_1.getIndexes();
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "people.hw4_1",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"sku" : 1
+		},
+		"ns" : "people.hw4_1",
+		"name" : "sku_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"price" : -1
+		},
+		"ns" : "people.hw4_1",
+		"name" : "price_-1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"description" : 1
+		},
+		"ns" : "people.hw4_1",
+		"name" : "description_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"category" : 1,
+			"brand" : 1
+		},
+		"ns" : "people.hw4_1",
+		"name" : "category_1_brand_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"reviews.author" : 1
+		},
+		"ns" : "people.hw4_1",
+		"name" : "reviews.author_1"
+	}
+]
+
+Test:
+
+> db.hw4_1.find({brand:"brand_1"}).explain()
+{
+	"cursor" : "BasicCursor",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 2,
+	"nscanned" : 2,
+	"nscannedObjectsAllPlans" : 2,
+	"nscannedAllPlans" : 2,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		
+	},
+	"server" : "javacourse1:27017"
+}
+(NO INDEX)
+> db.hw4_1.find({'brand':"brand_1"}).sort({price:1}).explain()
+{
+	"cursor" : "BtreeCursor price_-1 reverse",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 2,
+	"nscanned" : 2,
+	"nscannedObjectsAllPlans" : 4,
+	"nscannedAllPlans" : 4,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"price" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+(YES INDEX)
+> db.hw4_1.find({ $and: [ {price: {$gt:80}}, {price:{$lt:101}} ]}).sort({brand:1}).explain()
+{
+	"cursor" : "BtreeCursor price_-1",
+	"isMultiKey" : false,
+	"n" : 2,
+	"nscannedObjects" : 2,
+	"nscanned" : 2,
+	"nscannedObjectsAllPlans" : 4,
+	"nscannedAllPlans" : 4,
+	"scanAndOrder" : true,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"price" : [
+			[
+				101,
+				80
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+(YES INDEX)
+> db.hw4_1.find({brand: "brand_1"}).sort({category:1, brand:-1}).explain()
+{
+	"cursor" : "BasicCursor",
+	"isMultiKey" : false,
+	"n" : 1,
+	"nscannedObjects" : 2,
+	"nscanned" : 2,
+	"nscannedObjectsAllPlans" : 2,
+	"nscannedAllPlans" : 2,
+	"scanAndOrder" : true,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		
+	},
+	"server" : "javacourse1:27017"
+}
+(NO INDEX)
+
+------------------------------------------------------------------------------------
+Homework 4.2
+------------------------------------------------------------------------------------
+
+*This query performs a collection scan. 
+*The query uses an index to determine the order in which to return result documents. 
+The query uses an index to determine which documents match. 
+The query returns 46462 documents. 
+*The query visits 46462 documents. 
+The query is a "covered index query". 
+
+------------------------------------------------------------------------------------
+Homework 4.3
+------------------------------------------------------------------------------------
+
+# from the mongodb shell
+use blog
+db.posts.drop()
+
+# from the terminal window
+mongoimport -d blog -c posts < posts.json
+
+Three queries to increase performance for: (all queries are in blog database)
+1.  Most recent 10 blogs
+	code:  BlogPostDAO.findByDateDescending(int limit)
+	Shell Query:  db.posts.find().sort({date:-1}).limit(10);
+	
+	db.posts.find().sort({date:-1}).limit(10).explain();
+	{
+		"cursor" : "BasicCursor",
+		"isMultiKey" : false,
+		"n" : 10,
+		"nscannedObjects" : 1000,
+		"nscanned" : 1000,
+		"nscannedObjectsAllPlans" : 1000,
+		"nscannedAllPlans" : 1000,
+		"scanAndOrder" : true,
+		"indexOnly" : false,
+		"nYields" : 0,
+		"nChunkSkips" : 0,
+		"millis" : 75,
+		"indexBounds" : {
+			
+		},
+		"server" : "javacourse1:27017"
+	}
+	
+	index: db.posts.ensureIndex({date:-1});
+	
+	> db.posts.find().sort({date:-1}).limit(10).explain();
+	{
+		"cursor" : "BtreeCursor date_-1",
+		"isMultiKey" : false,
+		"n" : 10,
+		"nscannedObjects" : 10,
+		"nscanned" : 10,
+		"nscannedObjectsAllPlans" : 10,
+		"nscannedAllPlans" : 10,
+		"scanAndOrder" : false,
+		"indexOnly" : false,
+		"nYields" : 0,
+		"nChunkSkips" : 0,
+		"millis" : 0,
+		"indexBounds" : {
+			"date" : [
+				[
+					{
+						"$maxElement" : 1
+					},
+					{
+						"$minElement" : 1
+					}
+				]
+			]
+		},
+		"server" : "javacourse1:27017"
+	}
+
+
+2.  Most recent 10 posts for any given tag
+	code:  BlogPostDAO.findByTagDateDescending(String)
+	Shell Query:  db.posts.find({tags: 'crab'}).sort({date: -1}).limit(10);
+	
+	> db.posts.find({tags: 'crab'}).sort({date: -1}).limit(10).explain();
+	{
+		"cursor" : "BasicCursor",
+		"isMultiKey" : false,
+		"n" : 6,
+		"nscannedObjects" : 1000,
+		"nscanned" : 1000,
+		"nscannedObjectsAllPlans" : 1000,
+		"nscannedAllPlans" : 1000,
+		"scanAndOrder" : true,
+		"indexOnly" : false,
+		"nYields" : 0,
+		"nChunkSkips" : 0,
+		"millis" : 5,
+		"indexBounds" : {
+			
+		},
+		"server" : "javacourse1:27017"
+	}
+	
+	index: db.posts.ensureIndex({tags:1, date:-1});
+	
+	> db.posts.find({tags: 'crab'}).sort({date: -1}).limit(10).explain();
+	{
+		"cursor" : "BtreeCursor tags_1_date_-1",
+		"isMultiKey" : true,
+		"n" : 6,
+		"nscannedObjects" : 6,
+		"nscanned" : 6,
+		"nscannedObjectsAllPlans" : 6,
+		"nscannedAllPlans" : 6,
+		"scanAndOrder" : false,
+		"indexOnly" : false,
+		"nYields" : 0,
+		"nChunkSkips" : 0,
+		"millis" : 0,
+		"indexBounds" : {
+			"tags" : [
+				[
+					"crab",
+					"crab"
+				]
+			],
+			"date" : [
+				[
+					{
+						"$maxElement" : 1
+					},
+					{
+						"$minElement" : 1
+					}
+				]
+			]
+		},
+		"server" : "javacourse1:27017"
+	}
+	
+3.  Single blog by permalink
+	code:  findByPermalink(String permalink)
+	Shell Query:  db.posts.findOne({permalink: 'knexoqkilkpbivddjijc'});
+	
+	> db.posts.find({permalink: 'knexoqkilkpbivddjijc'}).explain();
+	{
+		"cursor" : "BasicCursor",
+		"isMultiKey" : false,
+		"n" : 1,
+		"nscannedObjects" : 1000,
+		"nscanned" : 1000,
+		"nscannedObjectsAllPlans" : 1000,
+		"nscannedAllPlans" : 1000,
+		"scanAndOrder" : false,
+		"indexOnly" : false,
+		"nYields" : 0,
+		"nChunkSkips" : 0,
+		"millis" : 1,
+		"indexBounds" : {
+			
+		},
+		"server" : "javacourse1:27017"
+	}
+	
+	index: db.posts.ensureIndex({permalink:1});
+	
+	> db.posts.find({permalink: 'knexoqkilkpbivddjijc'}).explain();
+	{
+		"cursor" : "BtreeCursor permalink_1",
+		"isMultiKey" : false,
+		"n" : 1,
+		"nscannedObjects" : 1,
+		"nscanned" : 1,
+		"nscannedObjectsAllPlans" : 1,
+		"nscannedAllPlans" : 1,
+		"scanAndOrder" : false,
+		"indexOnly" : false,
+		"nYields" : 0,
+		"nChunkSkips" : 0,
+		"millis" : 0,
+		"indexBounds" : {
+			"permalink" : [
+				[
+					"knexoqkilkpbivddjijc",
+					"knexoqkilkpbivddjijc"
+				]
+			]
+		},
+		"server" : "javacourse1:27017"
+	}
+
+	
+------------------------------------------------------------------------------------
+Homework 4.4
+------------------------------------------------------------------------------------
+
+mongoimport -d m101 -c profile < sysprofile.json
+
+> use m101
+> db.profile.find({ns:/school2.students/}).sort({millis:-1}).limit(1).pretty();
+{
+	"_id" : ObjectId("52e968a24036d6be2d75b34d"),
+	"ts" : ISODate("2012-11-20T20:09:49.862Z"),
+	"op" : "query",
+	"ns" : "school2.students",
+	"query" : {
+		"student_id" : 80
+	},
+	"ntoreturn" : 0,
+	"ntoskip" : 0,
+	"nscanned" : 10000000,
+	"keyUpdates" : 0,
+	"numYield" : 5,
+	"lockStats" : {
+		"timeLockedMicros" : {
+			"r" : 19776550,
+			"w" : 0
+		},
+		"timeAcquiringMicros" : {
+			"r" : 4134067,
+			"w" : 5
+		}
+	},
+	"nreturned" : 10,
+	"responseLength" : 2350,
+	"millis" : 15820,
+	"client" : "127.0.0.1",
+	"user" : ""
+}
+
+Answer: 15820

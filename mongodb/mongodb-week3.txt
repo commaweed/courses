@@ -1,0 +1,1183 @@
+Schema Design: 
+
+------------------------------------------------------------------------------------
+MongoDB Schema Design
+------------------------------------------------------------------------------------
+
+* mongo db stores rich documents
+	- not just tabular data
+	- can store an array of items
+	- or a value for a certain key can be an entirely other document
+		allows us to prejoin data for fast access
+	- doesn't support joins directly inside the kernal; must do it in application itself
+	- may want to imbed join directly within the document
+	- no constraints
+	- don't support transactions, but do support atomic operations
+	- no declared schema
+
+Quiz:
+What's the single most important factor in designing your application schema within MongoDB?
+Matching the data access patterns of your application
+
+------------------------------------------------------------------------------------
+Relational Normalization
+------------------------------------------------------------------------------------
+
+* andrew gives brief discussion on 3rd normal form
+* three goals in relational world
+	1.  free the database of modification anomalies
+		* mongodb: going to avoid embedding data in documents in ways that create these anomalies
+		           where data can be inconsistently changed
+	2.  minimize redesign when extending
+	3.  avoid bias toward any particular access pattern
+		* not going to worry about this with mongodb
+		
+------------------------------------------------------------------------------------
+Mongo Design for Blog
+------------------------------------------------------------------------------------
+
+Two of the collections in the blog:  posts and users
+
+> db.posts.find().pretty()
+{
+	"_id" : ObjectId("xxx"),
+	"author" : "erhlich",								//ID for the user's table (immutable)
+	"body" : "This is a test body",
+	"comments" : [										//comments are unregistered (user's can leave other email addr)
+		{
+			"body" : "this is a comment",
+			"email" : "john@doe.com",
+			"author" : "John Doe",
+		},
+		{
+			"body" : "this is another comment\r\n",
+			"email" : "jane@doe.com",
+			"author" : "Jane Doe",
+		}		
+	],
+	"date" : ISODate("2012-11-07T05:47:22.9412"),
+	"permalink: "this_is_a_test_Post",
+	"tags" : [
+		"cycling",
+		"mongodb",
+		"swimming"
+	],
+	"title" : "This is a test Post"
+}
+
+Question is, is this susceptible to the type of update anomaly due to the redundancy of data?  NO
+
+When we pull a document, we have just about all the data we need to display to the user.
+
+> db.users.find()
+{ "_id" : "erlichson" "password" : "34985" }
+
+Quiz:
+Which data access pattern is not well supported by the blog schema?
+1.  Collecting the most recent blog entries
+	just do a find in the collection then order them by date and do a limit
+2.  Collecting all the information to display a single post
+	The entire blog post is contained in a single document so this is easy
+3.  Collecting all comments by a single authoer
+	Does support it provided you add an index (on comments.author); then you could do a find 
+*4. Providing a table of contents by tag
+	(not well supported) would need some sort of aggregation framework to do a group by
+	you'd have to pull out every collection and organize them by tag (complicated)
+
+------------------------------------------------------------------------------------
+Alternative Schema for Blog
+------------------------------------------------------------------------------------
+
+* could have a separate collection for posts, comments, and tags
+* if we did that, what would it look like
+
+posts					comments					tag
+--------------------	--------------------		--------------------
+{ _id: 1,				{ _id: 3					{ _id: ____,
+  title: ____,			  post_id: 1,				  tag: ____,
+  body: ____,			  author: ____,				  post_id: 1 }
+  author: ____,			  author_emai: ____,
+  date: ____ }			  order: ____ }
+
+* for comments, we'd have multiple documents and we'd need an order attribute to tell us what order they go in
+* for tags, we'd also need multiple documents
+* the problem is, mongo db does not have a join
+	you'd have to fetch from each one in the application and do the join there 
+* one good rule of thumb in mongodb in schema design is to try and not think relational and embed data where you can
+* documents have an upper limit of 16mb in size (so you may need to do the above anyways if you have a ton
+  of comments or tags that would cause the document to exceed its size limit)
+* erhlich doesn't think the above design works that well, but is the most natural coming from a relational world
+
+------------------------------------------------------------------------------------
+Living Without Constraints
+------------------------------------------------------------------------------------
+
+* one of the great things about relational is it is really good at keeping your data consistent
+	- can use a foreign key constraint to do that
+* in mongodb, constraints do not exist - up to the programmer to maintain that consistency
+* embedding actually helps with this (another reason why the alternative design is bad)
+	makes it easier to keep the data intact and consistent
+
+Quiz:
+What does Living Without Constraints refer to?
+Keeping your data consistent even though MongoDB lacks foreign key constraints
+
+------------------------------------------------------------------------------------
+Living Without Transactions
+------------------------------------------------------------------------------------
+
+* transaction offer ACID
+	A - Atomicity
+	C - Consistency
+	I - Isolation
+	D - Durability
+	
+* mongdb doesn't have transactions, but does have atomic operations
+	- means that when you work on a single document, that work will be completed before anyone else sees the document
+	- see all changes you make, or none of them
+	- using atomic operations, you can often accomplish the same things a transaction would do
+		reason, embedding
+
+Three different approaches to doing this in mongodb to overcome a lack of transactions
+1.  restructure your schema so that you are working within a single document
+2.  implement some sort of locking in software
+3.  tolerate a little bit of inconsistencey (it's okay if someone sees it for a second (or refresh)
+
+Quiz:
+Which of the following operations operate atomically within a single document? Check all that apply.
+(all of them)
+Update 
+findAndModify 
+$addToSet (within an update) 
+$push within an update 
+
+------------------------------------------------------------------------------------
+One to One Relations
+------------------------------------------------------------------------------------
+
+* one-to-one:  each item corresponds to exactly one other item
+
+Example:  employee : resume
+	1.  you could decide to keep two different collections
+	2.  you could decide to embed the resume document in employee
+	3.  you could decide to embed the employee document in the resume
+
+Employee					Resume
+-----------------------		-----------------------
+_id: 20						_id: 30
+name: "andrew"				jobs: [ ]
+resume: 30					education: [ ]
+
+embed example:
+
+_id: 20
+name: "andrew"
+resume: {
+	_id: 30
+	jobs: [ ]
+	education: [ ]
+}
+
+* how you do it depends upon:
+
+1.  Frequency of access
+	a.  example:  constantly access the employee, but rarely access resume and resume is large
+		may decide to keep them separate collections because you don't want to pull resume into memory
+		everytime you pull the employee
+2.  The size of the items (which one is growing all the time)
+	1.  example:  if the resume is so large, you may not be able to embed it
+3.  Atomicity of the document
+	If you knew you couldn't withstand any inconsistency, you may want to embed so you can update all at once
+
+
+Quiz:
+What's a good reason you might want to keep two documents that are related to each other one-to-one in separate collections? 
+Check all that apply.
+Because you want to allow atomic update of both documents at once. 
+* To reduce the working set size of your application. 
+To enforce foreign key constraints
+* Because the combined size of the documents would be larger than 16MB 
+
+------------------------------------------------------------------------------------
+One to Many Relations
+------------------------------------------------------------------------------------
+
+* where there are two entities and many map to the one entity
+
+city : person
+	NYC has 8 million people in it
+	
+could have:
+
+city collection
+	name:
+	area:
+	people: [ ] //will not work because there are way too many people
+	
+then say you could have people collection :
+
+people
+-----------------------
+{
+	name: andrew 
+	city: {
+		name: nyc
+		area:
+	}
+}
+
+* problem with this design:  but now the city data would be repeated in multiple documents
+	opens up inconsistencies
+
+* the best way to do this is to use true linking 
+
+would need 2 collections with ID links and you join in the application:
+
+people:						city:
+-----------------------		-----------------------
+{ name: "andrew"			{ _id: "nyc",
+  city: "nyc"				  blah: }
+}
+
+* what if it's one to few (and not a one to ton)
+
+e.g. blog posts
+
+with the blog collection, okay to embed the comments
+
+Quiz:
+When is it recommended to represent a one to many relationship in multiple collections?
+Whenever the many is large
+
+------------------------------------------------------------------------------------
+Many to Many Relations
+------------------------------------------------------------------------------------
+
+example:  books : authors
+
+each book could have more than one author and each author could have more than one book
+
+* in the real world, it actually tends to be few to few
+
+1.  can link them in both directions
+
+Books							authors
+-----------------------			-----------------------
+_id: 12							_id: 27
+title: "gone with the wind"		author_name: "blah"
+authors: [ 27 ]					books: [ 12, 7, 8 ]
+
+2.  you could embed the book in authors
+	don't do this unless you need to for performance reasons
+	could end up having duplicates and inconsistent update anomalies
+
+Books							authors
+-----------------------			-----------------------
+_id: 12							_id: 27
+title: "gone with the wind"		author_name: "blah"
+authors: [ 27 ]					books: [ 12, 7, 8 ]
+
+example:  students : teachers
+
+Students						Teachers
+-----------------------			-----------------------
+_id: 1							_id: 7
+name: "student"					name: "teacher"
+teachers: [ 7 ]				students: [ 1, 7, 8 ]
+
+* you could embed
+	e.g. put teacher inside student collection
+		not a good idea because there is a good chance that you want to insert a teacher before he has students
+		or embed a student in the system before he has teachers
+		
+------------------------------------------------------------------------------------
+multikeys
+------------------------------------------------------------------------------------
+
+* mongodb supports multi-key indexes
+
+Students						Teachers
+-----------------------			-----------------------
+_id: 1							_id: 7
+name: "Andrew"					name: "John Doe"
+teachers: [ 1, 7 ]					
+
+* two queries you may want to ask
+1.  tell me all of the teachers for a particular student
+db.students.find({ _id: 1 }, { teachers: 1, _id: 0 })
+
+2.  find all the students that have a particular teacher
+	- not as clear
+	- search in the students collection using a set operator to find all the documents where the teacher IDs appear
+	and you want this to be fast
+	- mongo supports adding an index on the teachers key.  When you index an array, you get a multikey index where
+	  mongo actually indexes all of the values in the array for all the documents
+
+shell:
+> use school
+
+db.students.insert({ _id: 0, name: "Andrew Erlichson", teachers: [ 0, 1 ] });
+db.students.insert({ _id: 1, name: "Richard Kreuter", teachers: [ 0, 1, 3 ] });
+db.students.insert({ _id: 2, name: "Eliot Horowitz", teachers: [ 0, 2, 3 ] });
+db.students.insert({ _id: 3, name: "Mark Heinrich", teachers: [ 0, 3 ] });
+db.teachers.insert({ _id: 0, name: "Mark Horowitz" });
+db.teachers.insert({ _id: 1, name: "John Hennessy" });
+db.teachers.insert({ _id: 2, name: "Bruce Wolley" });
+db.teachers.insert({ _id: 3, name: "James Plummer" });
+
+> db.students.find();
+{ "_id" : 0, "name" : "Andrew Erlichson", "teachers" : [  0,  1 ] }
+{ "_id" : 1, "name" : "Richard Kreuter", "teachers" : [  0,  1,  3 ] }
+{ "_id" : 2, "name" : "Eliot Horowitz", "teachers" : [  0,  2,  3 ] }
+{ "_id" : 3, "name" : "Mark Heinrich", "teachers" : [  0,  3 ] }
+> db.teachers.find();
+{ "_id" : 0, "name" : "Mark Horowitz" }
+{ "_id" : 1, "name" : "John Hennessy" }
+{ "_id" : 2, "name" : "Bruce Wolley" }
+{ "_id" : 3, "name" : "James Plummer" }
+
+> db.students.ensureIndex({'teachers':1})
+
+* now we can query and have it hit the index
+
+> db.students.find({ teachers : { '$all': [1, 3]}});
+{ "_id" : 1, "name" : "Richard Kreuter", "teachers" : [  0,  1,  3 ] }
+
+* use .explain at end of query to see the query plan used
+> db.students.find({ teachers : { '$all': [1, 3]}}).explain()
+{
+	"cursor" : "BtreeCursor teachers_1",	//means mongodb used an index
+	"isMultiKey" : true,
+	"n" : 1,
+	"nscannedObjects" : 2,
+	"nscanned" : 2,
+	"nscannedObjectsAllPlans" : 2,
+	"nscannedAllPlans" : 2,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"teachers" : [
+			[
+				1,
+				1
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+
+------------------------------------------------------------------------------------
+Benefits of Embedding
+------------------------------------------------------------------------------------
+
+* the main benefit of embedding is performance
+	- comes from improved read performance
+	- one round trip to the db
+	- spinning disks have a high latency - can take over 1 millisecond to get to first byte
+		once get to first byte, each additional byte comes pretty quickly
+	- so if you can colocate the document together, it would be faster than reading multiple times if data is not embedded
+	- same with the write
+	- however, if your documents grow to the barrier, you could have another problem because you'd have to split 
+	  your document anyways
+
+------------------------------------------------------------------------------------
+Trees
+------------------------------------------------------------------------------------
+
+* how do you represent a tree in the database
+
+Example: ecommerce like amazon:  
+	home -> outdoors -> winter -> snow
+	
+products					category
+-----------------------		-----------------------
+category: 7					_id: 7
+product_name: "blower"		category_name: "outdoors"
+							parent: 6
+							
+* not easy to find all the parents to this category (iteratively query until you get to the top)
+* alternative way to do it is list all children (also fairly limiting)
+* instead list all the ancestors 
+
+products					category
+-----------------------		-----------------------
+category: 7					_id: 7
+product_name: "blower"		category_name: "outdoors"
+							parent: 6
+							ancestors: [ 6, 7, 8, 9 ]
+							
+Quiz:
+
+Given the following typical document for a e-commerce category hierarchy collection called categories
+{
+  _id: 34,
+  name : "Snorkeling",
+  parent_id: 12,
+  ancestors: [12, 35, 90]
+}
+Which query will find all descendants of the snorkeling category?
+db.categories.find({ancestors:34})
+
+------------------------------------------------------------------------------------
+When to Denormalize
+------------------------------------------------------------------------------------
+
+* one of the reasons why you normalize data in the relational world is you want to avoid modification anomalies
+* as long as we don't duplicate data, we don't open ourselves up to modification anomalies
+
+To avoid modification anomalies that come with denormalization:
+
+one-to-one:
+
+* in mongodb, embed
+	from relational point of view, like taking one entire table and folding it into another
+
+one-to-many:
+
+* embed from the many to the one
+* embedding from one to many, then linking is probably best
+
+many-to-many:
+
+* link from both using object arrays
+* embedding could need to duplication and it would be up to application programmer to keep it all up to date
+
+------------------------------------------------------------------------------------
+Handling Blobs
+------------------------------------------------------------------------------------
+
+* how to store large files in mongodb - larger than 16mb (called blobs)
+* Grid FS is the way to do it in mongodb
+* Grid FS breaks a large blob into pieces for you and store it into some collection
+* mongo db breaks it up into two collections:
+	* chuncks collection
+		breaks doc into 16 mb chunks, each doc is one chunk
+	* files collection
+		puts a single doc into a small doc that describes the docs that it put into the chunks collection
+		the file _id will go into each document in the chunks collection
+
+
+package week.three.examples;
+
+import java.io.InputStream;
+import java.net.UnknownHostException;
+import java.util.Arrays;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.MongoClient;
+import com.mongodb.gridfs.GridFS;
+import com.mongodb.gridfs.GridFSInputFile;
+
+public class GridFSTest {
+	
+	private static final String FILE_NAME = "abbeysong.mpg";
+	private static final String FILE_PATH = "/my_large_files/" + FILE_NAME;
+	
+	public static void main(String[] args) throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DB db = client.getDB("course");
+		
+		InputStream inputStream = GridFSTest.class.getResourceAsStream(FILE_PATH);
+		
+		//input type GridFS
+		GridFS videos = new GridFS(db, "videos");
+		GridFSInputFile video = videos.createFile(inputStream, FILE_NAME);
+		
+		//other metadata
+		BasicDBObject metadata = new BasicDBObject("description", "Abbey Singing");
+		metadata.append("tags", Arrays.asList("Singing", "home"));
+	
+		video.setMetaData(metadata);
+		video.save();
+		
+		System.out.println("Object ID in Files Collection [" + video.get("_id") + "]");
+		//result: Object ID in Files Collection [52dfb516e4b0b072e04a02e0]
+	}
+}
+
+> use course
+switched to db course
+> show collections
+...
+videos.chunks
+videos.files
+> db.videos.files.find().pretty();
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"chunkSize" : NumberLong(262144),
+	"length" : NumberLong(24728894),
+	"md5" : "90ccb80653f3281e92c71e79a163c499",
+	"filename" : "abbeysong.mpg",
+	"contentType" : null,
+	"uploadDate" : ISODate("2014-01-22T12:09:58.493Z"),
+	"aliases" : null,
+	"metadata" : {
+		"description" : "Abbey Singing",
+		"tags" : [
+			"Singing",
+			"home"
+		]
+	}
+}
+> db.videos.chunks.find({},{data:0}).pretty();
+
+
+> db.videos.files.find().pretty();
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"chunkSize" : NumberLong(262144),
+	"length" : NumberLong(24728894),
+	"md5" : "90ccb80653f3281e92c71e79a163c499",
+	"filename" : "abbeysong.mpg",
+	"contentType" : null,
+	"uploadDate" : ISODate("2014-01-22T12:09:58.493Z"),
+	"aliases" : null,
+	"metadata" : {
+		"description" : "Abbey Singing",
+		"tags" : [
+			"Singing",
+			"home"
+		]
+	}
+}
+> db.videos.chunks.find({},{data:0}).pretty();
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e1"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 0
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e2"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 1
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e3"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 2
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e4"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 3
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e5"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 4
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e6"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 5
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e7"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 6
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e8"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 7
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02e9"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 8
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02ea"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 9
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02eb"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 10
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02ec"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 11
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02ed"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 12
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02ee"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 13
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02ef"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 14
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02f0"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 15
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02f1"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 16
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02f2"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 17
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02f3"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 18
+}
+{
+	"_id" : ObjectId("52dfb516e4b0b072e04a02f4"),
+	"files_id" : ObjectId("52dfb516e4b0b072e04a02e0"),
+	"n" : 19
+}
+
+Quiz:
+Which of the following statements are true about GridFS?
+GridFS stores large blobs in a single collection by breaking up the file into multiple pieces.
+Each gridFS document is given a unique filename.
+* GridFS stores large blobs in two collections, one for metadata and one for the blob chunks.
+GridFS compresses your file on disk.
+
+If you want compression, you have to do it before you send it to grid fs
+
+------------------------------------------------------------------------------------
+Learn more about GridFS
+------------------------------------------------------------------------------------
+
+api.mongodb.gridfs
+	GridFSDBFile - used for reading from
+	GridFSFile - used for writing to
+	
+------------------------------------------------------------------------------------
+Sidebar:  Importing from a twitter feed
+------------------------------------------------------------------------------------	
+
+api.twitter.com/1/statuses/user_timeline.json?screen_name=MongoDB&include_rts=1
+{"errors": [{"message": "The Twitter REST API v1 is no longer active. Please migrate to API v1.1. https://dev.twitter.com/docs/api/1.1/overview.", "code": 68}]}
+
+package week.three.examples;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.HttpStatus;
+import org.apache.commons.httpclient.methods.GetMethod;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.util.JSON;
+
+/**
+ * Note: twitter disabled the rest client or requires authentication
+ * {"errors": [{"message": "The Twitter REST API v1 is no longer active. 
+ *   Please migrate to API v1.1. https://dev.twitter.com/docs/api/1.1/overview.", "code": 68}]}
+ * HTTP status code: 403
+ */
+public class ImportTweets {
+	public static void main(String[] args) throws UnknownHostException, IOException, ParseException {
+		final String screenName = args.length > 0 ? args[0] : "MongoDB";
+		
+		MongoClient client = new MongoClient();
+		DBCollection collection = client.getDB("course").getCollection("sidebar");
+		
+		List<DBObject> tweets = getLatestTweets(screenName);
+		if (tweets == null) {
+			System.out.println("No Tweets!");
+		} else {
+			for (DBObject tweet : tweets) {
+				massageTweetId(tweet);
+				massageTweet(tweet);
+				collection.update(new BasicDBObject("_id", tweet.get("_id")), tweet, true, false);
+			}	
+			
+			System.out.println("Tweet count: " + collection.count());
+		}
+	}
+	
+	public static void massageTweet(DBObject tweet) throws ParseException {
+		SimpleDateFormat format = new SimpleDateFormat("EEE MMM d H:m:s Z y");
+		tweet.put("created_at", format.parse((String) tweet.get("created_at")));
+		
+		DBObject userDocument = (DBObject) tweet.get("user");
+		Iterator<String> keyIterator = userDocument.keySet().iterator();
+		while (keyIterator.hasNext()) {
+			String key = keyIterator.next();
+			if (!("id".equals(key) || "name".equals(key) || "screen_name".equals(key))) {
+				keyIterator.remove();
+			}
+		}
+	}
+	
+	public static void massageTweetId(DBObject tweet) {
+		Object id = tweet.get("id");
+		tweet.removeField("id");
+		tweet.put("_id", id);
+	}
+	 
+	public static List<DBObject> getLatestTweets(String screenName) throws IOException {
+		final String url = "http://api.twitter.com/1/statuses/user_timeline.json?screen_name=" + 
+			screenName + "&include_rts=1";
+		System.out.println("Connecting to [" +url + "]");
+		
+		HttpMethod method = new GetMethod(url);
+		String responseBody = null;
+		try {
+			//display status code
+			int statusCode = new HttpClient().executeMethod(method);
+			if (statusCode != HttpStatus.SC_OK) {
+				System.out.println("\nBad status code: " + method.getStatusLine());
+			}
+
+			//display response headers
+			System.out.println("\nResponse Headers: ");
+			Header[] responseHeaders = method.getResponseHeaders();
+			for (Header header : responseHeaders) {
+				System.out.print(header);
+			}
+			
+			//display response body
+			responseBody = method.getResponseBodyAsString();
+			System.out.println("\nResponse Body: [" + responseBody + "]");
+		} finally {
+			method.releaseConnection();
+		}	
+		
+		List<DBObject> results = null;
+		if (responseBody != null) {
+			//JSON takes a json string, which can be a single document or a list
+			results = (List<DBObject>) JSON.parse(method.getResponseBodyAsString());
+		}
+		
+		return results;
+	}
+}
+
+> db.twitter.find({ retweet_count: { "$gt":5}}, {retweet_count:1, text:1}).count();
+> db.twitter.find({ text: /China/ }, {text:1}) //text containing China
+
+------------------------------------------------------------------------------------
+Homework 3.1
+------------------------------------------------------------------------------------	
+
+remove the old collection
+-------------------------
+> use school
+> db.students.drop()
+
+then import
+-------------------------
+$ mongoimport -d school -c students < hw3_1_students.json
+connected to: 127.0.0.1
+Sat Jan 25 02:43:03.790 check 9 200
+Sat Jan 25 02:43:03.791 imported 200 objects
+
+package tjjenk2;
+
+import java.net.UnknownHostException;
+
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+import com.mongodb.QueryBuilder;
+
+public class Homework3_1 {
+	/**
+	 * Get a collection to the students.grades.
+	 * @return
+	 * @throws UnknownHostException
+	 */
+	public static DBCollection getCollection() throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DBCollection collection =  client.getDB("school").getCollection("students");	
+		return collection;
+	}
+	
+	/**
+	 * Display the documents according to the provided criteria
+	 * @param collection
+	 * @param criteria
+	 * @param fields
+	 * @param sortCriteria
+	 * @param skipRows
+	 * @param limitRows
+	 */
+	public static void displayDocuments(
+		DBCollection collection,
+		DBObject criteria,
+		DBObject fields,
+		DBObject sortCriteria,
+		Integer skipRows,
+		Integer limitRows
+	) {
+		System.out.println("\nDocuments (total docs [" + collection.count() + "]): ");
+
+		DBCursor cursor = collection.find(criteria, fields).sort(sortCriteria);
+		
+		if (skipRows != null) cursor.skip(skipRows);
+		if (limitRows != null) cursor.limit(limitRows);
+		
+		try {
+			while (cursor.hasNext()) {
+				System.out.println(cursor.next());
+			}
+			
+			System.out.println();
+		} finally {
+			cursor.close();
+		}		
+	}
+	
+	/**
+	 * Returns the lowest homework score object.
+	 * @param scores A list of scores.
+	 * @return The lowest homework score or <code>null</code> if there are no 
+	 *         homework scores.
+	 */
+	private static void removeLowestScore(BasicDBList scores) {
+		BasicDBObject lowestScore = null;
+		
+		double currentLowest = -1;
+		for (Object listItem : scores) {
+			BasicDBObject currentScore = (BasicDBObject) listItem;
+			
+			String type = (String) currentScore.get("type");
+			double score = (Double) currentScore.get("score");
+			
+			if ("homework".equals(type)) {
+				if (currentLowest == -1 || score < currentLowest) {
+					currentLowest = score;
+					lowestScore = currentScore;
+				}
+			}
+		}
+		
+		if (lowestScore != null) {
+			scores.remove(lowestScore);
+		}
+	}
+	
+	/**
+	 * Main entry.
+	 * @param args
+	 * @throws UnknownHostException
+	 */
+	public static void main(String[] args) throws UnknownHostException {
+		DBCollection collection = getCollection();
+		
+		QueryBuilder queryBuilder = QueryBuilder.start("scores.type").is("homework");
+		DBObject query = queryBuilder.get();
+		DBObject fields = null;
+		DBObject sortCriteria = new BasicDBObject("_id", 1);
+		Integer skipRows = null;
+		Integer limitRows = 20;
+		
+		//display initial
+		displayDocuments(collection, query, fields, sortCriteria, skipRows, limitRows);
+		
+		//loop and remove lowest homework score
+		DBCursor cursor = collection.find(query, fields).sort(sortCriteria);
+		try {
+			while (cursor.hasNext()) {
+				DBObject document = cursor.next();
+				removeLowestScore((BasicDBList) document.get("scores"));
+				
+				//replace the existing document
+				collection.update(new BasicDBObject("_id", document.get("_id")), document, false, false); 
+			}
+		} finally {
+			cursor.close();
+		}
+		
+		displayDocuments(collection, query, fields, sortCriteria, skipRows, limitRows);
+	}
+}
+
+> db.students.find({_id:100}).pretty()
+{
+	"_id" : 100,
+	"name" : "Demarcus Audette",
+	"scores" : [
+		{
+			"type" : "exam",
+			"score" : 47.42608580155614
+		},
+		{
+			"type" : "quiz",
+			"score" : 44.83416623719906
+		},
+		{
+			"type" : "homework",
+			"score" : 39.01726616178844
+		}
+	]
+}
+
+> db.students.aggregate({'$unwind':'$scores'},{'$group':{'_id':'$_id', 'average':{$avg:'$scores.score'}}}, {'$sort':{'average':-1}}, {'$limit':1})
+{
+	"result" : [
+		{
+			"_id" : 13,
+			"average" : 91.98315917172745
+		}
+	],
+	"ok" : 1
+}
+
+UT OH:  just put 13 (missed it twice because I put the entire output)
+
+------------------------------------------------------------------------------------
+Homework 3.2
+------------------------------------------------------------------------------------	
+
+Test with mongoproc
+
+$ ./mongoProc.sh --console
+
+Connecting to MongoProc server...
+Ready to log in
+email> tjjenk2@gmail.com
+password> 
+Login successful
+Loading course information...
+Course(s) Loaded
+
+Courses
+1: M101J - 2014 January
+r: Refresh Grades
+e: Exit
+Choose an option> 1
+
+Weeks
+1: Week 2: CRUD
+2: Week 3: Schema Design
+b: Go back
+h: Go home
+M101J - 2014 January> 2
+
+Assignments
+1: Homework: Homework 3.2 (MongoProc Beta Version)
+2: Homework: Homework 3.3 (MongoProc Beta Version)
+b: Go back
+h: Go home
+M101J - 2014 January/Week 3: Schema Design> 1
+
+M101J - 2014 January
+Week 3: Schema Design
+Homework: Homework 3.2 (MongoProc Beta Version)
+
+Self Paced
+Attempts: 0/3
+Grade: 0/1
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 3: Schema Design/Homework: Homework 3.2 (MongoProc Beta Version)> t
+Tested
+M101J - 2014 January
+Week 3: Schema Design
+Homework: Homework 3.2 (MongoProc Beta Version)
+
+Self Paced
+Attempts: 0/3
+Grade: 0/1
+
+Feedback:
+Trying to grab the blog home page at url http://localhost:8082/
+
+Found the test user fBcPHVX in the users collection
+
+User creation successful.
+
+User login successful.
+
+Submission of single post successful
+
+Submission of second post successful
+
+Block index looks good.
+
+Found blog post in posts collection
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 3: Schema Design/Homework: Homework 3.2 (MongoProc Beta Version)> 1
+Graded
+M101J - 2014 January
+Week 3: Schema Design
+Homework: Homework 3.2 (MongoProc Beta Version)
+
+Self Paced
+Attempts: 1/3
+Grade: 1/1
+
+Feedback:
+Trying to grab the blog home page at url http://localhost:8082/
+
+Found the test user dfPxOIg in the users collection
+
+User creation successful.
+
+User login successful.
+
+Submission of single post successful
+
+Submission of second post successful
+
+Block index looks good.
+
+Found blog post in posts collection
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+------------------------------------------------------------------------------------
+Homework 3.3
+------------------------------------------------------------------------------------
+
+student@javacourse1:~/apps/mongoproc$ ./mongoProc.sh --console
+Connecting to MongoProc server...
+Ready to log in
+email> tjjenk2@gmail.com
+password> 
+Login successful
+Loading course information...
+Course(s) Loaded
+
+Courses
+1: M101J - 2014 January
+r: Refresh Grades
+e: Exit
+Choose an option> 1
+
+Weeks
+1: Week 2: CRUD
+2: Week 3: Schema Design
+b: Go back
+h: Go home
+M101J - 2014 January> 2
+
+Assignments
+1: Homework: Homework 3.2 (MongoProc Beta Version)
+2: Homework: Homework 3.3 (MongoProc Beta Version)
+b: Go back
+h: Go home
+M101J - 2014 January/Week 3: Schema Design> 2
+
+M101J - 2014 January
+Week 3: Schema Design
+Homework: Homework 3.3 (MongoProc Beta Version)
+
+Self Paced
+Attempts: 0/3
+Grade: 0/1
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 3: Schema Design/Homework: Homework 3.3 (MongoProc Beta Version)> t
+Tested
+M101J - 2014 January
+Week 3: Schema Design
+Homework: Homework 3.3 (MongoProc Beta Version)
+
+Self Paced
+Attempts: 0/3
+Grade: 0/1
+
+Feedback:
+Trying to grab the blog home page at url http://localhost:8082/
+
+Found the test user dHQBXfu in the users collection
+
+User creation successful.
+
+User login successful.
+
+Submission of single post successful
+
+Submission of second post successful
+
+Block index looks good.
+
+Found blog post in posts collection
+
+Successfully added blog comments
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 3: Schema Design/Homework: Homework 3.3 (MongoProc Beta Version)> 1
+Graded
+M101J - 2014 January
+Week 3: Schema Design
+Homework: Homework 3.3 (MongoProc Beta Version)
+
+Self Paced
+Attempts: 1/3
+Grade: 1/1
+
+Feedback:
+Trying to grab the blog home page at url http://localhost:8082/
+
+Found the test user iPxVsGx in the users collection
+
+User creation successful.
+
+User login successful.
+
+Submission of single post successful
+
+Submission of second post successful
+
+Block index looks good.
+
+Found blog post in posts collection
+
+Successfully added blog comments
+
+1: Grade
+t: Test
+b: Go back
+h: Go home
+
+M101J - 2014 January/Week 3: Schema Design/Homework: Homework 3.3 (MongoProc Beta Version)> 

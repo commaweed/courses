@@ -1,0 +1,9 @@
+# npm related
+**/node_module/
+**/npm-debug.log
+
+# eclipse
+**/.classpath
+**/.project
+**/.settings/
+

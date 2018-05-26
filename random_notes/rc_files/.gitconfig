@@ -1,0 +1,21 @@
+[user]
+	name = xxxx 
+	email = xxxxxx@xxxxx
+[push]
+	default = tracking
+[core]
+	editor = vim
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	ignorecase = false
+	precomposeunicode = false
+   autocrlf = input
+
+[alias]
+	oldll = log --pretty=format:"%C(yellow)%h%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate
+   ll = log --graph --oneline --color --pretty=format:'%C(yellow)%h%d%C(reset) %s %C(cyan)[%an, %ar]%C(reset)'
+   ch=log --name-status --oneline --pretty=format:'%C(yellow)%h%d%C(reset) %s
+[credential]
+	helper = cache --timeout 7200

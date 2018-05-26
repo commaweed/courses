@@ -1,0 +1,122 @@
+# docker course
+
+# get the install script from get.docker.com and execute it
+curl -fsSL get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# add user to docker group (relog for it to take effect) 
+#   - gives user ability to run a docker container later that could have root permission on the host
+#   - redhat won't work with this option - you have to be root
+#   - other than that, docker generally needs to run as root
+sudo usermod -aG docker tjjenk2
+
+# need docker machine and compose tools as well
+# you get these on docker's website in the documentation area not in the store
+
+# install docker machine
+base=https://github.com/docker/machine/releases/download/v0.14.0 &&
+curl -L $base/docker-machine-$(uname -s)-$(uname -m) >/tmp/docker-machine &&
+sudo install /tmp/docker-machine /usr/local/bin/docker-machine
+docker-machine version
+
+# install docker compose
+sudo curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+docker-compose version
+
+# optionally install command-completion for docker compose
+sudo yum -y install bash-completion
+https://docs.docker.com/compose/completion/
+sudo curl -L https://raw.githubusercontent.com/docker/compose/1.21.2/contrib/completion/bash/docker-compose -o /etc/bash_completion.d/docker-compose
+https://docs.docker.com/machine/completion/
+sudo curl -L https://raw.githubusercontent.com/docker/machine/v0.14.0/contrib/completion/bash/docker-machine.bash -o /etc/bash_completion.d/docker-machine
+
+# udemy course code
+git clone https://github.com/BretFisher/udemy-docker-mastery.git
+
+# start and check the docker daemon service
+sudo systemctl start docker
+sudo systemctl status docker
+
+# instructor website
+www.bretfisher.com/shell/
+
+# download the nginx web server docker image and run it as a container, opened port 80 on the host IP, then routes that traffic to the container IP on port 80 in the container
+docker container run --publish 80:80 nginx
+# then change to browser and type localhost/
+# run in background, add --detach
+docker container run --publish 80:80 --detach nginx
+# run with your own name
+docker container run --publish 80:80 --detach --name webhost nginx
+
+# see a listing of containers
+docker container ls 
+docker container ls -a
+docker ps
+
+# see logs
+docker container logs webhost
+
+# see processes running in a container
+docker container top webhost
+
+# remove some containers
+docker container rm x y z
+
+# start up a mongo database using docker image/container
+docker run --name mongo -d mongo
+docker top mongo
+
+# starting three servers on 3 different containers
+docker container run --publish 80:80 --detach --name nginx nginx
+docker container run --publish 8080:80 --detach --name httpd httpd
+docker container run --publish 3306:3306 --detach --env MYSQL_RANDOM_ROOT_PASSWORD=yes --name mysql mysql
+# use docker container logs mysql to see the password
+# alternatives
+docker container run -d -p 3306:3306 --name db -e MYSQL_RANDOM_ROOT_PASSWORD=yes mysql 
+# look for GENERATED ROOT PASSWORD: bo0Lae4aecha2tahpha8ooyikei6noeh
+curl localhost # get back nginx response
+curl localhost:8080 # get httpd response
+
+# and one for elastic search
+docker container run -d -p 9200:9200 --name elasticsearch elasticsearch
+docker container run -d -p 5601:5601 --name kibana kibana 
+curl 127.0.0.1:9200
+
+# network commands
+# show networks:
+docker network ls
+# inspect a network
+docker network inspect
+# create a network (--driver <-- default is bridge)
+docker network create --driver
+-> docker network create my_app_net
+-> docker container run -d --name new_nginx --network my_app_net nginx
+# attach a network to container (dynamically creates a NIC in a container on an existing virtual network)
+docker network connect
+-> docker network connect --help
+-> docker network connect <new> <orginal>
+   docker network connect 01ce8cb64a32 d78dd2559775 # this could put your container on 2 networks 
+# detach a network from container
+docker network disconnect
+docker network disconnect 01ce8cb64a32 d78dd2559775 
+
+# bridge network
+# the default network that bridges through the NAT firewall to the physical network that the host is connected to
+# Note: it does not have the DNS server built into it by default so you can use the --link to link to another container (easier to create a new network for your app)
+# host network
+# a special network that skips the virtual networking of docker and attaches the container directly to the host interface, but at a cost of security (but can improve performance of high-throughput)
+# none network
+# equivalent of having an interface on the computer that is not attached to anything
+
+# cannot rely on IP addresses for containers to talk to each other (use DNS naming instead) - docker uses the container name as equivalent of a host name
+docker container run -d --name my_nginx --network my_app_net nginx
+docker container exec -it my_nginx ping new_nginx # DNS resolution works; they are on same virtual network and can ping each other
+
+# example cli app testing curl -version
+docker container run -it --name testcentos --rm centos:7 bash 
+docker container run -it --name testubuntu --rm ubuntu:14.04 bash
+
+
+
+

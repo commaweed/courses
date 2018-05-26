@@ -1,0 +1,30 @@
+Step 1: Enable Google YUM repository
+
+Create a file called /etc/yum.repos.d/google-chrome.repo and add the following lines of code to it.
+
+[google-chrome]
+name=google-chrome
+baseurl=http://dl.google.com/linux/chrome/rpm/stable/$basearch
+enabled=1
+gpgcheck=1
+gpgkey=https://dl-ssl.google.com/linux/linux_signing_key.pub
+
+Step 2: Installing Chrome Web Browser
+
+First, check whether the latest version available from the Google’s own repository using following yum command.
+
+# yum info google-chrome-stable
+
+Do you see the highlighted output in the above image, that clearly telling that the latest version of chrome is available from repository. So, let’s install it using yum command as shown below, which will automatically install all needed dependencies.
+
+# yum install google-chrome-stable
+
+Update : Sadly, the Google Chrome browser no longer supports the most famous commercial distribution RHEL 6.x and its free clones such as CentOS and Scientific Linux.
+
+Yes, they’ve discontinued support for RHEL 6.X version as of Google Chrome and on other side, latest Firefox and Opera browsers run successfully on the same platforms.
+
+Luckily, there is a script developed by Richard Lloyd, that automatically download and install latest Google Chrome browser by picking libraries from a more recent released distro and put those libraries in (/opt/google/chrome/lib) directory and then you can able to run Google Chrome on RHEL/CentOS 6.x versions.
+
+# wget http://chrome.richardlloyd.org.uk/install_chrome.sh
+# chmod u+x install_chrome.sh
+# ./install_chrome.sh

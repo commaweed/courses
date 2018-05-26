@@ -1,0 +1,1918 @@
+aggregation framework: 
+
+------------------------------------------------------------------------------------
+Simple Aggregation Example
+------------------------------------------------------------------------------------
+
+SQL example:
+
+products table
+
+name		category		manufacturer		price
+ipad		tablet			Apple				499
+nexus		cellphone		Samsung				350
+
+select manufacturer, count(*) from products group by manufacturer
+
+manufacturer		count(*)
+Apple				2
+Samsung				3
+
+> use agg
+switched to db agg
+> db.products.insert({name:'Nexus 7', category: 'Tablets', manufacturer: 'Google', price: 199});
+> db.products.insert({name:'Kindle Paper White', category: 'Tablets', manufacturer: 'Amazon', price: 129});
+> db.products.insert({name:'Kindle Fire', category: 'Tablets', manufacturer: 'Amazon', price: 199});
+
+> db.products.aggregate([
+	{ 
+		$group: {
+			_id: '$manufacturer',
+			num_products: { $sum: 1}
+		}	
+	}
+]);
+{
+	"result" : [
+		{
+			"_id" : "Amazon",
+			"num_products" : 2
+		},
+		{
+			"_id" : "Google",
+			"num_products" : 1
+		}
+	],
+	"ok" : 1
+}
+
+* the mongodb aggregation framework returns its results as a document inside mongodb and that is one limitation
+  of the aggregation framework in that it cannot be larger than 16mb
+  
+
+Quiz:
+db.products.aggregate([
+	{ 
+		"$group": {
+			"_id": "$category",
+			"num_products": { "$sum": 1}
+		}	
+	}
+])
+
+------------------------------------------------------------------------------------
+The Aggregation Pipeline
+------------------------------------------------------------------------------------
+
+* In mongodb, aggregation uses a pipeline
+* goes through a series of stages and they can appear multiple times inside the pipeline
+* like the pipe in unix
+	du -s * | sort -n
+* each of the items of the array is a stage of the pipeline that will transform the results
+
+collection:  $project -> $match -> $group -> $sort -> result
+
+stages of the pipeline:
+
+$project
+	- often is the first one, but doesn't have to be
+	- selects out which keys you are interested in
+	- it can reshape the document
+	- for every document it sees, it sends out one document (1 to 1)
+$match
+	- filters
+	- might see 100 and product one 25 (n to 1)
+$group
+	- this is your aggregation function
+	- (n to 1)
+$sort
+	- sorts (1 to 1)
+$skip
+	- skips documents (n to 1)
+$limit
+	- limits the number of resulting documents (n to 1)
+$unwind
+	- in mongodb, you have documents that can have sub-arrays inside of them (pre-joined data)
+	- unwind unjoins the data
+	- e.g. tags: [ 'sports', 'outdoors', 'summer' ], unwind will produce a document for every element of the array
+	- it normalizes the data so you can more easily aggregate it
+
+* these stages can exist more than once
+* you can conceptually think of the documents as coming in the left-side, getting transformed in each stage, and
+  then getting a result-set from that
+
+Quiz:
+Which of the following are stages in the aggregation pipeline. Check all that apply.
+*Match 
+Transpose
+*Group 
+*Skip 
+*Limit 
+*Sort 
+*Project 
+*Unwind 
+
+------------------------------------------------------------------------------------
+Simple Example Expanded
+------------------------------------------------------------------------------------
+
+> db.products.find()
+{ "_id" : ObjectId("52f1dcb9e1cf47e611ac3062"), "name" : "Nexus 7", "category" : "Tablets", "manufacturer" : "Google", "price" : 199 }
+{ "_id" : ObjectId("52f1dcbae1cf47e611ac3063"), "name" : "Kindle Paper White", "category" : "Tablets", "manufacturer" : "Amazon", "price" : 129 }
+{ "_id" : ObjectId("52f1dcbbe1cf47e611ac3064"), "name" : "Kindle Fire", "category" : "Tablets", "manufacturer" : "Amazon", "price" : 199 }
+
+3 documents above
+
+db.products.aggregate([
+	{ 
+		"$group": {
+			"_id": "$manufacturer",
+			"num_products": { "$sum": 1}
+		}	
+	}
+])
+
+looks at the first document above, sees that it has a manfacturer key and thus generate a new document in the results similar 
+to upsert:
+
+{
+	_id: 'Google', 		//this column is value of the manufacturer key 
+	num_products: 1		//if document exists, $sum: 1 means add one to it, else insert new document with value 1
+}
+
+then it repeats this process by looking at the second document, third document, etc.
+
+Quiz:
+> db.stuff.find()
+{ "_id" : ObjectId("50b26f9d80a78af03b5163c8"), "a" : 1, "b" : 1, "c" : 1 }
+{ "_id" : ObjectId("50b26fb480a78af03b5163c9"), "a" : 2, "b" : 2, "c" : 1 }
+{ "_id" : ObjectId("50b26fbf80a78af03b5163ca"), "a" : 3, "b" : 3, "c" : 1 }
+{ "_id" : ObjectId("50b26fcd80a78af03b5163cb"), "a" : 3, "b" : 3, "c" : 2 }
+{ "_id" : ObjectId("50b26fd380a78af03b5163cc"), "a" : 3, "b" : 5, "c" : 3 }
+
+How many documents will be in the result set from aggregate?
+1
+2
+*3
+4
+5
+
+------------------------------------------------------------------------------------
+Compound Grouping
+------------------------------------------------------------------------------------
+
+* what if we want to group by multiple keys
+* similar to sql
+	select manufacturer, category, count(*) from products group by manfacturer, category
+* we do this by having a compound _id key
+	_id: { manufacturer: "$manufacturer", category: "$category" }
+> db.products.aggregate([
+	{ 
+		$group: {
+			_id: {
+				manufacturer: "$manufacturer",
+				category: "$category"
+			}, 
+			num_products: { "$sum": 1 }
+		}	
+	}
+])	
+{
+	"result" : [
+		{
+			"_id" : {
+				"manufacturer" : "Amazon",
+				"category" : "Tablets"
+			},
+			"num_products" : 2
+		},
+		{
+			"_id" : {
+				"manufacturer" : "Google",
+				"category" : "Tablets"
+			},
+			"num_products" : 1
+		}
+	],
+	"ok" : 1
+}
+
+* you could use a key in your result document in single column groupings too:
+> db.products.aggregate([
+	{ 
+		$group: {
+			_id: {
+				manufacturer: "$manufacturer"
+			}, 
+			num_products: { "$sum": 1 }
+		}	
+	}
+])
+{
+	"result" : [
+		{
+			"_id" : {
+				"manufacturer" : "Amazon"
+			},
+			"num_products" : 2
+		},
+		{
+			"_id" : {
+				"manufacturer" : "Google"
+			},
+			"num_products" : 1
+		}
+	],
+	"ok" : 1
+}
+
+Quiz:
+> db.stuff.find()
+{ "_id" : ObjectId("50b26f9d80a78af03b5163c8"), "a" : 1, "b" : 1, "c" : 1 }
+{ "_id" : ObjectId("50b26fb480a78af03b5163c9"), "a" : 2, "b" : 2, "c" : 1 }
+{ "_id" : ObjectId("50b26fbf80a78af03b5163ca"), "a" : 3, "b" : 3, "c" : 1 }
+{ "_id" : ObjectId("50b26fcd80a78af03b5163cb"), "a" : 3, "b" : 3, "c" : 2 }
+{ "_id" : ObjectId("50b26fd380a78af03b5163cc"), "a" : 3, "b" : 5, "c" : 3 }
+{ "_id" : ObjectId("50b27f7080a78af03b5163cd"), "a" : 3, "b" : 3, "c" : 2 }
+And the following aggregation query:
+
+db.stuff.aggregate([
+{
+	$group:
+		{
+			_id: {
+				'moe':'$a', 
+				'larry':'$b',
+				'curly':'$c'
+			}
+		}
+	}
+])
+
+111
+221
+331
+*332
+353
+*332
+
+111 -> 1
+221 -> 1
+331 -> 1
+332 -> 2
+353 -> 1
+
+5 documents
+
+------------------------------------------------------------------------------------
+Using a document for _id
+------------------------------------------------------------------------------------
+
+* _id of a document CAN be a complex document (it doesn't have to be a scalar value)
+> db.foo.insert({_id:{name:"andrew", class:"m101"}, hometown: "NY"})
+> db.foo.find();
+{ "_id" : { "name" : "andrew", "class" : "m101" }, "hometown" : "NY" }
+
+------------------------------------------------------------------------------------
+Aggregation Expressions
+------------------------------------------------------------------------------------
+
+* other expressions that exist in the aggregation grouping pipeline
+	(these are the expressions you can use in the $group phase)
+
+$sum
+	- lets you do two things
+		1.  count - add 1 each time you see a key
+		2.	sum up that key if you add the value of the key
+$avg
+	- averages the value of the key across documents
+$min
+	- finds the minimum value of a key
+$max
+	- finds the maximum value of a document of a certain key
+$push
+	- builds an array
+	- everytime you encounter a value, you can push it onto the array
+$addtoset
+	- builds an array
+	- does same thing as push, but only puts unique values
+$first
+	- requires you to first sort the documents
+	- finds the first value that it sees across the document
+$last
+	- requires you to first sort the documents
+	- finds the last value that it sees across the document
+	
+Quiz:
+Which of the following aggregation expressions must be used in conjunction with a sort to make any sense?
+$addToSet 
+*$first 
+*$last 
+$max 
+$min 
+$avg 
+$push 
+$sum 
+
+------------------------------------------------------------------------------------
+Using $sum
+------------------------------------------------------------------------------------
+
+* we saw summing a count, now let's see summing up the key
+db.products.aggregate([
+	{ 
+		$group: {
+			_id: { maker: "$manufacturer" },
+			sum_prices: { $sum: "$price" }
+		}
+	}
+])
+{
+	"result" : [
+		{
+			"_id" : {
+				"maker" : "Amazon"
+			},
+			"sum_prices" : 328
+		},
+		{
+			"_id" : {
+				"maker" : "Google"
+			},
+			"sum_prices" : 199
+		}
+	],
+	"ok" : 1
+}
+
+Quiz:
+mongoimport -d m101 -c zips < zips.json
+
+documents look like this:
+{
+	"city" : "CLANTON",
+	"loc" : [
+		-86.642472,
+		32.835532
+	],
+	"pop" : 13990,
+	"state" : "AL",
+	"_id" : "35045"
+}
+
+//group by state, summing by the pop field
+db.zips.aggregate([
+	{
+		"$group": {
+			"_id": "$state", 
+			"population": { "$sum": "$pop" }
+		}
+	}
+])
+
+------------------------------------------------------------------------------------
+Using $avg
+------------------------------------------------------------------------------------
+
+In file called using_avg.js:
+
+use agg
+db.products.aggregate([
+	{ 
+		$group: {
+			_id: { category: "$category" }, 
+			avg_price: { "$avg": "$price" }
+		}	
+	}
+])
+
+from command line:
+
+$ mongo < using_avg.js 
+MongoDB shell version: 2.4.8
+connecting to: test
+switched to db agg
+{
+	"result" : [
+		{
+			"_id" : {
+				"category" : "Tablets"
+			},
+			"avg_price" : 175.66666666666666
+		}
+	],
+	"ok" : 1
+}
+bye
+
+Quiz:
+db.zips.aggregate([
+	{
+		"$group": {
+			"_id": "$state", 
+			"average_pop": { "$avg": "$pop" }
+		}
+	}
+])
+
+------------------------------------------------------------------------------------
+Using $addToSet
+------------------------------------------------------------------------------------
+
+* no direct parallel in sql to addtoset
+* e.g. what products does each manufacturer sell - want to group by manufacturers and then for each, create a new array of
+  categories they sell - if the category is not in the set, it adds it
+
+use agg
+db.products.aggregate([
+	{ 
+		$group: {
+			_id: { maker: "$manufacturer" }, 
+			categories: { "$addToSet": "$category" }
+		}	
+	}
+])
+{
+	"result" : [
+		{
+			"_id" : {
+				"maker" : "Amazon"
+			},
+			"categories" : [
+				"Tablets"
+			]
+		},
+		{
+			"_id" : {
+				"maker" : "Google"
+			},
+			"categories" : [
+				"Tablets"
+			]
+		}
+	],
+	"ok" : 1
+}
+
+
+Quiz:
+> db.zips.find({state:"CA",city:"PALO ALTO"})
+{ "city" : "PALO ALTO", "loc" : [ -122.149685, 37.444324 ], "pop" : 15965, "state" : "CA", "_id" : "94301" }
+{ "city" : "PALO ALTO", "loc" : [ -122.184234, 37.433424 ], "pop" : 1835, "state" : "CA", "_id" : "94304" }
+{ "city" : "PALO ALTO", "loc" : [ -122.127375, 37.418009 ], "pop" : 24309, "state" : "CA", "_id" : "94306" }
+Write an aggregation query that will return the postal codes that cover each city. The results should look like this:
+
+		{
+			"_id" : "CENTREVILLE",
+			"postal_codes" : [
+				"22020",
+				"49032",
+				"39631",
+				"21617",
+				"35042"
+			]
+		},
+
+
+db.zips.aggregate([
+	{ 
+		"$group": {
+			"_id": "$city", 
+			"postal_codes": { "$addToSet": "$_id" }
+		}	
+	}
+])
+
+
+------------------------------------------------------------------------------------
+Using $push
+------------------------------------------------------------------------------------
+
+* very similar to addToSet, except push does not guarantee that each item is added only once (duplicates allowed)
+use agg
+db.products.aggregate([
+	{ 
+		$group: {
+			_id: { maker: "$manufacturer" }, 
+			categories: { "$push": "$category" }
+		}	
+	}
+])
+{
+	"result" : [
+		{
+			"_id" : {
+				"maker" : "Amazon"
+			},
+			"categories" : [
+				"Tablets",
+				"Tablets"
+			]
+		},
+		{
+			"_id" : {
+				"maker" : "Google"
+			},
+			"categories" : [
+				"Tablets"
+			]
+		}
+	],
+	"ok" : 1
+}
+
+Quiz:
+Given the zipcode dataset (explained more fully in the using $sum quiz) that has documents that look like this:
+
+> db.zips.findOne()
+{
+	"city" : "ACMAR",
+	"loc" : [
+		-86.51557,
+		33.584132
+	],
+	"pop" : 6055,
+	"state" : "AL",
+	"_id" : "35004"
+}
+
+would you expect the following two queries to produce the same result or different results?
+
+db.zips.aggregate([{"$group":{"_id":"$city", "postal_codes":{"$push":"$_id"}}}])
+
+db.zips.aggregate([{"$group":{"_id":"$city", "postal_codes":{"$addToSet":"$_id"}}}])
+
+*Same result (because postal codes are unique in the collection)
+Different Result
+
+------------------------------------------------------------------------------------
+Using $max and $min
+------------------------------------------------------------------------------------
+
+* max gets the max value in the grouping and makes it available for creating a new key
+use agg
+db.products.aggregate([
+	{ 
+		$group: {
+			_id: { maker: "$manufacturer" }, 
+			maxprice: { "$max": "$price" }
+		}	
+	}
+])
+{
+	"result" : [
+		{
+			"_id" : {
+				"maker" : "Amazon"
+			},
+			"maxprice" : 199
+		},
+		{
+			"_id" : {
+				"maker" : "Google"
+			},
+			"maxprice" : 199
+		}
+	],
+	"ok" : 1
+}
+
+* this is a little limiting because we don't know the product name that has the max price
+* there are ways to do this with sort, last, and first (but not with just max)
+
+Quiz:
+Again thinking about the zip code database, write an aggregation query that will return the population
+of the postal code in each state with the highest population. It should return output that looks like this:
+
+{
+			"_id" : "WI",
+			"pop" : 57187
+		},
+		{
+			"_id" : "WV",
+			"pop" : 70185
+		},
+..and so on
+
+db.zips.aggregate([
+	{ 
+		"$group": {
+			"_id": "$state", 
+			"pop": { "$max": "$pop" }
+		}	
+	}
+])
+
+------------------------------------------------------------------------------------
+Double $group stages
+------------------------------------------------------------------------------------
+
+* you can run a particular aggregation stage more than once
+* for example, you can group more than once (double grouping)
+* e.g. group by students - what is the average class grade in each class
+	1.  average all the student grades within each class (i.e. group by class, student)
+	2.  then average those grades to get the class average (for each class)
+
+insert some data:
+
+use school
+for (var i = 1; i <= 10; i++) {
+	for (var j = 1; j <= 5; j++) {
+		var types = ["exam", "quiz", "homework"];
+		for (var k = 0; k < 3; k++) {
+			var score = Math.random() * 100;
+			db.grades.insert({student_id:i, class_id:j, type:types[k], score: score});
+		}
+	}
+}
+> db.grades.find();
+{ "_id" : ObjectId("52f5f1da215ec738ff9a909c"), "student_id" : 1, "class_id" : 1, "type" : "exam", "score" : 91.45845209714025 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a909d"), "student_id" : 1, "class_id" : 1, "type" : "quiz", "score" : 4.463843908160925 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a909e"), "student_id" : 1, "class_id" : 1, "type" : "homework", "score" : 83.88938789721578 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a909f"), "student_id" : 1, "class_id" : 2, "type" : "exam", "score" : 23.10937128495425 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a0"), "student_id" : 1, "class_id" : 2, "type" : "quiz", "score" : 53.32109599839896 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a1"), "student_id" : 1, "class_id" : 2, "type" : "homework", "score" : 78.51813107263297 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a2"), "student_id" : 1, "class_id" : 3, "type" : "exam", "score" : 0.12386632151901722 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a3"), "student_id" : 1, "class_id" : 3, "type" : "quiz", "score" : 54.899282404221594 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a4"), "student_id" : 1, "class_id" : 3, "type" : "homework", "score" : 25.814705900847912 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a5"), "student_id" : 1, "class_id" : 4, "type" : "exam", "score" : 55.70869587827474 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a6"), "student_id" : 1, "class_id" : 4, "type" : "quiz", "score" : 52.46621600817889 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a7"), "student_id" : 1, "class_id" : 4, "type" : "homework", "score" : 45.5895354738459 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a8"), "student_id" : 1, "class_id" : 5, "type" : "exam", "score" : 34.07013318501413 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90a9"), "student_id" : 1, "class_id" : 5, "type" : "quiz", "score" : 34.07928554806858 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90aa"), "student_id" : 1, "class_id" : 5, "type" : "homework", "score" : 88.77854973543435 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90ab"), "student_id" : 2, "class_id" : 1, "type" : "exam", "score" : 73.5001296037808 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90ac"), "student_id" : 2, "class_id" : 1, "type" : "quiz", "score" : 6.518358387984335 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90ad"), "student_id" : 2, "class_id" : 1, "type" : "homework", "score" : 64.33923640288413 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90ae"), "student_id" : 2, "class_id" : 2, "type" : "exam", "score" : 84.71164440270513 }
+{ "_id" : ObjectId("52f5f1da215ec738ff9a90af"), "student_id" : 2, "class_id" : 2, "type" : "quiz", "score" : 5.67601874936372 }
+
+db.grades.aggregate([
+	{ 
+		$group: {
+			_id: { class_id: "$class_id", student_id: "$student_id" }, 
+			average: { "$avg": "$score" }
+		}
+	},
+	{
+		$group: {
+			_id: "$_id.class_id", 
+			average: { "$avg": "$average" }
+		}		
+	}
+])
+{
+	"result" : [
+		{
+			"_id" : 1,
+			"average" : 50.734393245074905
+		},
+		{
+			"_id" : 2,
+			"average" : 49.92790026046957
+		},
+		{
+			"_id" : 3,
+			"average" : 45.215692219790064
+		},
+		{
+			"_id" : 4,
+			"average" : 50.426976353240505
+		},
+		{
+			"_id" : 5,
+			"average" : 48.06606695676843
+		}
+	],
+	"ok" : 1
+}
+
+
+Quiz:
+Given the following collection:
+
+> db.fun.find()
+{ "_id" : 0, "a" : 0, "b" : 0, "c" : 21 }
+{ "_id" : 1, "a" : 0, "b" : 0, "c" : 54 }
+{ "_id" : 2, "a" : 0, "b" : 1, "c" : 52 }
+{ "_id" : 3, "a" : 0, "b" : 1, "c" : 17 }
+{ "_id" : 4, "a" : 1, "b" : 0, "c" : 22 }
+{ "_id" : 5, "a" : 1, "b" : 0, "c" : 5 }
+{ "_id" : 6, "a" : 1, "b" : 1, "c" : 87 }
+{ "_id" : 7, "a" : 1, "b" : 1, "c" : 97 }
+
+And the following aggregation query
+
+db.fun.aggregate([{$group:{_id:{a:"$a", b:"$b"}, c:{$max:"$c"}}}, {$group:{_id:"$_id.a", c:{$min:"$c"}}}])
+What values are returned?
+17 and 54
+97 and 21
+54 and 5
+*52 and 22
+
+grouping one:
+
+a	b		groupings 		c (max)
+0	0		21, 54			54
+0	1		52, 17			52
+1	0		22, 5			22
+1	1		87, 97			97
+
+grouping two:
+
+a		groupings 		c (min)
+0		54, 52			52
+1		22, 97			22
+
+
+
+------------------------------------------------------------------------------------
+$project
+------------------------------------------------------------------------------------
+
+* the project phase lets you reshape the documents as they come through the pipeline
+* works like a transformation stage
+* 1:1 - for every document that comes in, one document is pushed out
+* you could: 
+	- remove a key
+	- add a new key
+	- reshape the key - put key inside another document with another key for example
+	- functions you can use on the key
+		- $toUpper, $toLower, $add, $multiply
+		
+use agg
+db.products.aggregate([
+	{ 
+		"$project": {
+			"_id": 0, 
+			"maker": { $toLower: "$manufacturer" },
+			"details": { "category": "$category", "price": { "$multiply": [ "$price", 10 ] }},
+			"item": "$name"
+		}	
+	}
+])
+{
+	"result" : [
+		{
+			"maker" : "google",
+			"details" : {
+				"category" : "Tablets",
+				"price" : 1990
+			},
+			"item" : "Nexus 7"
+		},
+		{
+			"maker" : "amazon",
+			"details" : {
+				"category" : "Tablets",
+				"price" : 1290
+			},
+			"item" : "Kindle Paper White"
+		},
+		{
+			"maker" : "amazon",
+			"details" : {
+				"category" : "Tablets",
+				"price" : 1990
+			},
+			"item" : "Kindle Fire"
+		}
+	],
+	"ok" : 1
+}
+
+Quiz:
+Write an aggregation query with a single projection stage that will transform the documents in the zips collection from this:
+
+{
+	"city" : "ACMAR",
+	"loc" : [
+		-86.51557,
+		33.584132
+	],
+	"pop" : 6055,
+	"state" : "AL",
+	"_id" : "35004"
+}
+
+to documents in the result set that look like this:
+
+{
+	"city" : "acmar",
+	"pop" : 6055,
+	"state" : "AL",
+	"zip" : "35004"
+}
+
+db.zips.aggregate([
+	{ 
+		"$project": {
+			"_id": 0,
+			"city": { "$toLower": "$city" }, 
+			"pop": 1,
+			"state": 1,
+			"zip": "$_id"
+		}	
+	}
+])
+
+"_id": 0 <- suppresses that field (won't show up in results)
+"pop": 1 <- makes sure field show up exactly the same in results
+
+------------------------------------------------------------------------------------
+$match
+------------------------------------------------------------------------------------
+
+* performs a filter on the document as it passes through the pipe
+* it has a reducing affect
+* n : 1
+
+use m101
+db.zips.aggregate([
+	{ 
+		$match: {
+			state: "NY"
+		}	
+	}
+])
+
+{
+	"result" : [
+...
+		{
+			"city" : "ELMIRA",
+			"loc" : [
+				-76.839686,
+				42.086919
+			],
+			"pop" : 10018,
+			"state" : "NY",
+			"_id" : "14905"
+		}
+	],
+	"ok" : 1
+}
+
+db.zips.aggregate([
+	{ 
+		$match: {
+			state: "NY"
+		}	
+	},
+		{ 
+			$group: {
+				_id: "$city",
+				population: { $sum: "$pop" },
+				zip_codes: { $addToSet: "$_id" }
+			}	
+	},
+	{ 
+		$match: {
+			_id: "NEW YORK"
+		}	
+	}
+])
+
+{
+	"result" : [
+		{
+			"_id" : "NEW YORK",
+			"population" : 1476790,
+			"zip_codes" : [
+				"10044",
+				"10038",
+				"10037",
+				"10036",
+				"10035",
+				"10280",
+				"10034",
+				"10033",
+				"10028",
+				"10030",
+				"10011",
+				"10023",
+				"10013",
+				"10024",
+				"10128",
+				"10022",
+				"10020",
+				"10014",
+				"10018",
+				"10039",
+				"10016",
+				"10021",
+				"10019",
+				"10029",
+				"10027",
+				"10040",
+				"10005",
+				"10017",
+				"10026",
+				"10002",
+				"10001",
+				"10025",
+				"10009",
+				"10031",
+				"10012",
+				"10032",
+				"10003",
+				"10007",
+				"10006",
+				"10010"
+			]
+		}
+	],
+	"ok" : 1
+}
+
+db.zips.aggregate([
+	{ 
+		$match: {
+			state: "NY"
+		}	
+	},
+		{ 
+			$group: {
+				_id: "$city",
+				population: { $sum: "$pop" },
+				zip_codes: { $addToSet: "$_id" }
+			}	
+	},
+	{ 
+		$match: {
+			_id: "NEW YORK"
+		}	
+	},
+		{ 
+			$project: {
+				_id: 0,
+				city: "$_id",
+				population: 1,
+				zip_codes: 1
+			}	
+	}
+])
+{
+	"result" : [
+		{
+			"population" : 1476790,
+			"zip_codes" : [
+				"10044",
+				"10038",
+				"10037",
+				"10036",
+				"10035",
+				"10280",
+				"10034",
+				"10033",
+				"10028",
+				"10030",
+				"10011",
+				"10023",
+				"10013",
+				"10024",
+				"10128",
+				"10022",
+				"10020",
+				"10014",
+				"10018",
+				"10039",
+				"10016",
+				"10021",
+				"10019",
+				"10029",
+				"10027",
+				"10040",
+				"10005",
+				"10017",
+				"10026",
+				"10002",
+				"10001",
+				"10025",
+				"10009",
+				"10031",
+				"10012",
+				"10032",
+				"10003",
+				"10007",
+				"10006",
+				"10010"
+			],
+			"city" : "NEW YORK"
+		}
+	],
+	"ok" : 1
+}
+
+
+Quiz:
+Again, thinking about the zipcode collection, write an aggregation query with a single match phase that filters 
+for zipcodes with greater than 100,000 people. You may need to look up the use of the $gt operator in the MongoDB 
+docs.
+
+Assume the collection is called zips.
+
+> db.zips.findOne();
+{
+	"city" : "ACMAR",
+	"loc" : [
+		-86.51557,
+		33.584132
+	],
+	"pop" : 6055,
+	"state" : "AL",
+	"_id" : "35004"
+}
+
+
+db.zips.aggregate([
+	{ 
+		$match: {
+			pop: { $gt: 100000 }
+		}	
+	}
+])
+
+{
+	"result" : [
+		{
+			"city" : "CHICAGO",
+			"loc" : [
+				-87.7157,
+				41.849015
+			],
+			"pop" : 112047,
+			"state" : "IL",
+			"_id" : "60623"
+		},
+		{
+			"city" : "NEW YORK",
+			"loc" : [
+				-73.958805,
+				40.768476
+			],
+			"pop" : 106564,
+			"state" : "NY",
+			"_id" : "10021"
+		},
+		{
+			"city" : "NEW YORK",
+			"loc" : [
+				-73.968312,
+				40.797466
+			],
+			"pop" : 100027,
+			"state" : "NY",
+			"_id" : "10025"
+		},
+		{
+			"city" : "BROOKLYN",
+			"loc" : [
+				-73.956985,
+				40.646694
+			],
+			"pop" : 111396,
+			"state" : "NY",
+			"_id" : "11226"
+		}
+	],
+	"ok" : 1
+}
+
+------------------------------------------------------------------------------------
+$sort
+------------------------------------------------------------------------------------
+
+* sorts the documents
+* it can be a memory hog - doesn't go to disk for sorting (does it in memory)
+* if the sort is before a grouping and after a match, it may use an index, but if after grouping it won't use an index
+* it can go before or after group phase
+* can sort multiple times
+
+* e.g. sorting at end of pipeline
+db.zips.aggregate([
+	{ 
+		$match: {
+			state: "NY"
+		}	
+	},
+		{ 
+			$group: {
+				_id: "$city",
+				population: { $sum: "$pop" }
+			}	
+	},
+	{ 
+		$project: {
+			_id: 0,
+			city: "$_id",
+			population: 1
+		}	
+	},
+	{ $sort: { population: -1 } } //descending; it can be a compound key too
+])
+
+{
+	"result" : [
+	...
+		{
+			"population" : 5,
+			"city" : "BROOKFIELD"
+		},
+		{
+			"population" : 1,
+			"city" : "NEW HYDE PARK"
+		},
+		{
+			"population" : 0,
+			"city" : "CHILDWOLD"
+		},
+		{
+			"population" : 0,
+			"city" : "EAST SPRINGFIELD"
+		},
+		{
+			"population" : 0,
+			"city" : "RAQUETTE LAKE"
+		}
+	],
+	"ok" : 1
+}
+
+
+Quiz:
+Again, considering the zipcode collection, which has documents that look like this,
+
+{
+	"city" : "ACMAR",
+	"loc" : [
+		-86.51557,
+		33.584132
+	],
+	"pop" : 6055,
+	"state" : "AL",
+	"_id" : "35004"
+}
+
+Write an aggregation query with just a sort stage to sort by (state, city), both ascending. Assume the collection is called zips.
+
+db.zips.aggregate([{ $sort: { state: 1, city: 1 }}])
+
+------------------------------------------------------------------------------------
+$limit and $skip
+------------------------------------------------------------------------------------
+
+* works pretty much the same way as it does with find() (server first sorts, then skips, then limits with find())
+* the result will be undefined if you don't sort first
+* with aggregations, order of skip and limit do matter
+* positive number is forward (skip or limit)
+
+db.zips.aggregate([
+	{ 
+		$match: {
+			state: "NY"
+		}	
+	},
+		{ 
+			$group: {
+				_id: "$city",
+				population: { $sum: "$pop" }
+			}	
+	},
+	{ 
+		$project: {
+			_id: 0,
+			city: "$_id",
+			population: 1
+		}	
+	},
+	{ $sort: { population: -1 } },
+	{ $skip: 10 },
+	{ $limit: 5}
+])
+
+{
+	"result" : [
+		{
+			"population" : 165629,
+			"city" : "ASTORIA"
+		},
+		{
+			"population" : 145967,
+			"city" : "JACKSON HEIGHTS"
+		},
+		{
+			"population" : 100646,
+			"city" : "FAR ROCKAWAY"
+		},
+		{
+			"population" : 85732,
+			"city" : "RIDGEWOOD"
+		},
+		{
+			"population" : 83017,
+			"city" : "BINGHAMTON"
+		}
+	],
+	"ok" : 1
+}
+
+
+Quiz:
+Suppose you change the order of skip and limit in the query shown in the lesson, to look like this:
+
+db.zips.aggregate([
+    {$match:
+     {
+	 state:"NY"
+     }
+    },
+    {$group:
+     {
+	 _id: "$city",
+	 population: {$sum:"$pop"},
+     }
+    },
+    {$project:
+     {
+	 _id: 0,
+	 city: "$_id",
+	 population: 1,
+     }
+    },
+    {$sort:
+     {
+	 population:-1
+     }
+    },
+    {$limit: 5},
+    {$skip: 10} 
+])
+
+How many documents do you think will be in the result set?
+10
+5
+*0
+100
+
+------------------------------------------------------------------------------------
+Revisiting $first and $last
+------------------------------------------------------------------------------------
+
+* group operators
+* allow us to get the first or last value in each group as the aggregation pipeline processes the document
+
+* e.g. have some documents that have been sorted by a, b
+
+a		b
+0		23
+0		45
+0		97
+1		17
+1		68
+1		73
+
+* now group by a and ask for $first
+
+a		b
+0		23
+1		17
+
+* or group by a and ask for $last
+
+a		b
+0		97
+1		73
+
+* let's say we wanted to find the largest city in every state
+
+db.zips.aggregate([
+	/* get the population of every city in every state */
+	{ 
+		$group: {
+			_id: { state: "$state", city: "$city" },
+			population: { $sum: "$pop" }
+		}	
+	},
+	
+	/* sort by state, population */
+	{ $sort: { "_id.state": 1, population: -1 } },
+	
+	//group by state and get the first item
+	{ 
+		$group: {
+			_id: "$_id.state",
+			city: { $first: "$_id.city" },
+			population: { $first: "$population" }
+		}	
+	},	
+	
+	//sort again by state
+	{ $sort: { "_id": 1 } },
+	
+	//I only want to see 5 of the results
+	{ $limit: 5}
+])
+
+{
+	"result" : [
+		{
+			"_id" : "AK",
+			"city" : "ANCHORAGE",
+			"population" : 183987
+		},
+		{
+			"_id" : "AL",
+			"city" : "BIRMINGHAM",
+			"population" : 242606
+		},
+		{
+			"_id" : "AR",
+			"city" : "LITTLE ROCK",
+			"population" : 192895
+		},
+		{
+			"_id" : "AZ",
+			"city" : "PHOENIX",
+			"population" : 890853
+		},
+		{
+			"_id" : "CA",
+			"city" : "LOS ANGELES",
+			"population" : 2102295
+		}
+	],
+	"ok" : 1
+}
+
+Quiz:
+
+Given the following collection:
+
+> db.fun.find()
+{ "_id" : 0, "a" : 0, "b" : 0, "c" : 21 }
+{ "_id" : 1, "a" : 0, "b" : 0, "c" : 54 }
+{ "_id" : 2, "a" : 0, "b" : 1, "c" : 52 }
+{ "_id" : 3, "a" : 0, "b" : 1, "c" : 17 }
+{ "_id" : 4, "a" : 1, "b" : 0, "c" : 22 }
+{ "_id" : 5, "a" : 1, "b" : 0, "c" : 5 }
+{ "_id" : 6, "a" : 1, "b" : 1, "c" : 87 }
+{ "_id" : 7, "a" : 1, "b" : 1, "c" : 97 }
+
+What would be the value of c in the result from this aggregation query
+
+db.fun.aggregate([
+    {$match:{a:0}},
+    {$sort:{c:-1}}, 
+    {$group:{_id:"$a", c:{$first:"$c"}}}
+])
+
+match on a=0:
+
+{ "_id" : 0, "a" : 0, "b" : 0, "c" : 21 }
+{ "_id" : 1, "a" : 0, "b" : 0, "c" : 54 }
+{ "_id" : 2, "a" : 0, "b" : 1, "c" : 52 }
+{ "_id" : 3, "a" : 0, "b" : 1, "c" : 17 }
+
+sort c descending:
+
+{ "_id" : 1, "a" : 0, "b" : 0, "c" : 54 }
+{ "_id" : 2, "a" : 0, "b" : 1, "c" : 52 }
+{ "_id" : 0, "a" : 0, "b" : 0, "c" : 21 }
+{ "_id" : 3, "a" : 0, "b" : 1, "c" : 17 }
+
+group by a, get the first c
+
+54
+
+------------------------------------------------------------------------------------
+$unwind
+------------------------------------------------------------------------------------
+
+* in mongodb, documents can have an arrays
+* it is not easy to group on something that is in an array, unless we move it out of the array and make it flat
+* use $unwind to unjoin the data and then rejoin it in a way that lets us do grouping calculations on it
+
+e.g. (makes a data explosion, but we need it)
+{ a:1, b:2, c:['apple','pear','orange']}
+$unwind
+{ a:1, b:2, c:'apple'}
+{ a:1, b:2, c:'pear'}
+{ a:1, b:2, c:'orange'}
+
+Quiz:
+
+Suppose you have the following collection:
+
+db.people.find()
+{ "_id" : "Barack Obama", "likes" : [ "social justice", "health care", "taxes" ] }
+{ "_id" : "Mitt Romney", "likes" : [ "a balanced budget", "corporations", "binders full of women" ] }
+
+And you unwind the "likes" array of each document. How many documents will you wind up with?
+2
+4
+*6
+9
+
+------------------------------------------------------------------------------------
+$unwind example
+------------------------------------------------------------------------------------
+
+use blog
+db.posts.aggregate([
+	//unwind the tags
+	{ "$unwind": "$tags" },
+	
+	//group by tags to get total tags
+	{ 
+		$group: {
+			_id: "$tags",
+			count: { $sum: 1 }
+		}	
+	},
+	
+	//sort the count of tags, descending (most popular at top)
+	{ $sort: { count: -1 } },
+	
+	//I only want to see a few
+	{ $limit: 10},
+	
+	//change name of _id to tag
+	{ 
+		$project: {
+			_id: 0,
+			tag: "$_id",
+			count: 1
+		}	
+	}
+])
+{
+	"result" : [
+		{
+			"count" : 13,
+			"tag" : "elbow"
+		},
+		{
+			"count" : 12,
+			"tag" : "bonsai"
+		},
+		{
+			"count" : 12,
+			"tag" : "grass"
+		},
+		{
+			"count" : 11,
+			"tag" : "star"
+		},
+		{
+			"count" : 11,
+			"tag" : "oval"
+		},
+		{
+			"count" : 11,
+			"tag" : "quail"
+		},
+		{
+			"count" : 11,
+			"tag" : "lily"
+		},
+		{
+			"count" : 11,
+			"tag" : "maria"
+		},
+		{
+			"count" : 11,
+			"tag" : "toy"
+		},
+		{
+			"count" : 11,
+			"tag" : "feeling"
+		}
+	],
+	"ok" : 1
+}
+
+Quiz:
+Which grouping operator will enable to you to reverse the effects of an unwind?
+$sum
+$addToSet
+*$push
+$first
+
+------------------------------------------------------------------------------------
+Double $unwind
+------------------------------------------------------------------------------------
+
+* sometimes you have more than one array in a document and you may want to double unwind
+* that would create a cartesian product of documents
+
+use agg
+db.inventory.insert({name:'Polo', sizes:['s','m','l'], colors:['n','w','r','o']})
+db.inventory.insert({name:'tshirt', sizes:['s','m','l','xl'], colors:['n','b','r','o']})
+db.inventory.insert({name:'chino', sizes:['32x32','30x31','36x32'], colors:['n','w','v','o']})
+
+db.inventory.aggregate([
+	{ "$unwind": "$sizes" },
+	{ "$unwind": "$colors" },
+	{ 
+		$group: {
+			_id: { size: "$sizes", color: "$colors" },
+			count: { $sum: 1 }
+		}	
+	}	
+])
+
+Quiz:
+
+Can you reverse the effects of a double unwind (2 unwinds in a row) in our inventory collection (shown in the lesson )
+with the $push operator?
+*Yes (needs two pushes)
+No
+
+db.inventory.aggregate([
+	{ "$unwind": "$sizes" },
+	{ "$unwind": "$colors" },
+	
+	//create the color array
+	{ 
+		$group: {
+			_id: { name: "$name", size: "$sizes" },
+			colors: { $push: "$colors" }
+		}	
+	},
+	
+	//create the size array
+	{ 
+		$group: {
+			_id: { name: "$_id.name", colors: "$colors" },
+			size: { $push: "$_id.size" }
+		}	
+	},
+	
+	//project to get the effect we want
+	{ 
+		$project: {
+			_id: 0,
+			name: "$_id.name",
+			sizes: 1,
+			colors: "$_id.colors"
+		}	
+	}
+])
+
+------------------------------------------------------------------------------------
+Mapping between SQL and Aggregation
+------------------------------------------------------------------------------------
+
+Relational				Mongdb
+where					$match
+group by				$group
+having					$match
+select					$project
+order by				$sort
+limit					$limit
+sum()					$sum
+count()					$sum with a 1
+join					no direct corresponding operator
+
+------------------------------------------------------------------------------------
+Some Common SQL examples
+------------------------------------------------------------------------------------
+
+http://docs.mongodb.org/manual/reference/sql-aggregation-comparison/
+
+------------------------------------------------------------------------------------
+Limitations of the aggregation framework
+------------------------------------------------------------------------------------
+
+* the resultset is limited to 16mb of memory - returns a single document
+* Cannot use more than 10% of memory on the machine to do the aggregation
+* in a sharded environment
+	- aggregation does work in a sharded environment, however, after the first $group or $sort phase
+	  it has to be brought back to the mongos server to be merged before giving to the next stage
+	  of the pipeline.  Maybe you shouldn't colate the application with the mongos server.
+* alternatives:
+	- map-reduce - built into mongo
+	- hadoop is an implementation of map-reduce
+
+------------------------------------------------------------------------------------
+Homework 5.1
+------------------------------------------------------------------------------------
+
+Finding the most frequent author of comments on your blog
+
+In this assignment you will use the aggregation framework to find the most frequent author of comments on your blog.
+We will be using the same basic dataset as last week, with posts and comments shortened considerably, and with many
+fewer documents in the collection in order to streamline the operations of the Hands On web shell.
+
+Use the aggregation framework in the web shell to calculate the author with the greatest number of comments.
+
+To help you verify your work before submitting, the author with the fewest comments is Cody Strouth and he commented 68 times.
+
+Once you've found the correct answer with your query, please choose your answer below for the most prolific comment author.
+
+Note: this data set is relatively large. Due to some quirks of the shell, the entire result set gets pulled into the browser
+on find(), so if you want to see the document schema, we recommend either using db.posts.findOne(), db.posts.find().limit(1),
+or that you plan on waiting for a bit after you hit enter. We also recommend that the last phase of your aggregation pipeline
+is {$limit: 1} (or some single digit number) 
+
+db.posts.aggregate([
+	{ "$unwind": "$comments" },
+	
+	//create the color array
+	{ 
+		$group: {
+			_id: { author: "$comments.author" },
+			count: { $sum: 1 }
+		}	
+	},
+	{ $sort: { count: -1 } }, 
+	{ $limit: 3}
+])
+
+Kayce Kenyon
+Devorah Smartt
+*Gisela Levin
+Brittny Warwick
+Tamika Schildgen
+Mariette Batdorf
+
+------------------------------------------------------------------------------------
+Homework 5.2
+------------------------------------------------------------------------------------
+
+Crunching the Zipcode dataset
+Please calculate the average population of cities in California (abbreviation CA) and New York (NY) (taken together)
+with populations over 25,000.
+
+For this problem, assume that a city name that appears in more than one state represents two separate cities.
+
+Please round the answer to a whole number.
+Hint: The answer for CT and NJ (using this data set) is 38177.
+
+Please note:
+
+    One zip code may cover cities in different states.
+    Different states might have the same city name.
+    A city might have multiple zip codes.
+
+Once you've generated your aggregation query, select your answer from the choices below.
+
+For purposes of keeping the Hands On shell quick, we have used a subset of the data you previously used in zips.json,
+not the full set. This is why there are only 200 documents (and 200 zip codes), and all of them are in New York, 
+Connecticut, New Jersey, and California. 
+
+> db.zips.findOne()
+{
+	"_id" : "92278",
+	"city" : "TWENTYNINE PALMS",
+	"state" : "CA",
+	"pop" : 11412,
+	"loc" : [
+		-116.06041,
+		34.237969
+	]
+}
+
+db.zips.aggregate([
+	{ $match: { state: { $in: ['CT', 'NJ'] }}},
+	{ 
+		$group: {
+			_id: { state: "$state", city: "$city" },
+			total_city_pop: { $sum: "$pop" }
+		}	
+	},
+	{ $match: { total_city_pop: { $gt: 25000 }}},
+	{ 
+		$group: {
+			_id: null,
+			population: { $avg: "$total_city_pop" }
+		}	
+	}
+])
+{
+	"ok" : 1,
+	"result" : [
+		{
+			"_id" : null,
+			"population" : 38176.63636363636
+		}
+	]
+}
+
+db.zips.aggregate([
+	{ $match: { state: { $in: ['CA', 'NY'] }}},
+	{ 
+		$group: {
+			_id: { state: "$state", city: "$city" },
+			total_city_pop: { $sum: "$pop" }
+		}	
+	},
+	{ $match: { total_city_pop: { $gt: 25000 }}},
+	{ 
+		$group: {
+			_id: null,
+			population: { $avg: "$total_city_pop" }
+		}	
+	}
+])
+{
+	"ok" : 1,
+	"result" : [
+		{
+			"_id" : null,
+			"population" : 44804.782608695656
+		}
+	]
+}
+
+
+------------------------------------------------------------------------------------
+Homework 5.3
+------------------------------------------------------------------------------------
+
+Who's the easiest grader on campus?
+A set of grades are loaded into the grades collection.
+
+The documents look like this:
+
+{
+	"_id" : ObjectId("50b59cd75bed76f46522c392"),
+	"student_id" : 10,
+	"class_id" : 5,
+	"scores" : [
+		{
+			"type" : "exam",
+			"score" : 69.17634380939022
+		},
+		{
+			"type" : "quiz",
+			"score" : 61.20182926719762
+		},
+		{
+			"type" : "homework",
+			"score" : 73.3293624199466
+		},
+		{
+			"type" : "homework",
+			"score" : 15.206314042622903
+		},
+		{
+			"type" : "homework",
+			"score" : 36.75297723087603
+		},
+		{
+			"type" : "homework",
+			"score" : 64.42913107330241
+		}
+	]
+}
+
+There are documents for each student (student_id) across a variety of classes (class_id). Note that not all students
+in the same class have the same exact number of assessments. Some students have three homework assignments, etc.
+
+Your task is to calculate the class with the best average student performance. This involves calculating an average 
+for each student in each class of all non-quiz assessments and then averaging those numbers to get a class average. 
+To be clear, each student's average includes only exams and homework grades. Don't include their quiz scores in the 
+calculation.
+
+What is the class_id which has the highest average student perfomance?
+
+Hint/Strategy: You need to group twice to solve this problem. You must figure out the GPA that each student has achieved
+in a class and then average those numbers to get a class average. After that, you just need to sort. The hardest class is
+class_id=2. Those students achieved a class average of 37.6
+
+Below, choose the class_id with the highest average student average. 
+8
+9
+*1
+5
+7
+0
+6
+
+db.grades.aggregate([
+	{ $match: { class_id: 2 }},
+	{ $unwind: "$scores" },
+	{ $match: { "scores.type": { "$ne": "quiz" }}},
+	{ 
+		$group: {
+			_id: { class_id: "$class_id", student_id: "$student_id" },
+			student_avg: { $avg: "$scores.score" }
+		}	
+	},
+	{ 
+		$group: {
+			_id: { class_id: "$_id.class_id" },
+			class_avg: { $avg: "$student_avg" }
+		}	
+	},	
+	{ $limit:3}
+])
+{
+	"ok" : 1,
+	"result" : [
+		{
+			"_id" : {
+				"class_id" : 2
+			},
+			"class_avg" : 37.61742117387635
+		}
+	]
+}
+
+db.grades.aggregate([
+	{ $unwind: "$scores" },
+	{ $match: { "scores.type": { "$ne": "quiz" }}},
+	{ 
+		$group: {
+			_id: { class_id: "$class_id", student_id: "$student_id" },
+			student_avg: { $avg: "$scores.score" }
+		}	
+	},
+	{ 
+		$group: {
+			_id: { class_id: "$_id.class_id" },
+			class_avg: { $avg: "$student_avg" }
+		}	
+	},	
+	{ $sort: { class_avg: -1 }},
+	{ $limit:3}
+])
+{
+	"ok" : 1,
+	"result" : [
+		{
+			"_id" : {
+				"class_id" : 1
+			},
+			"class_avg" : 64.50642324269175
+		},
+		{
+			"_id" : {
+				"class_id" : 5
+			},
+			"class_avg" : 58.084487676135495
+		},
+		{
+			"_id" : {
+				"class_id" : 20
+			},
+			"class_avg" : 57.6309834548989
+		}
+	]
+}
+
+------------------------------------------------------------------------------------
+Homework 5.4
+------------------------------------------------------------------------------------
+
+Removing Rural Residents
+In this problem you will calculate the number of people who live in a zip code in the US where the city starts with a digit.
+We will take that to mean they don't really live in a city. Once again, you will be using the zip code collection, which you
+will find in the 'handouts' link in this page. Import it into your mongod using the following command from the command line:
+
+> mongoimport -d test -c zips --drop zips.json
+
+
+If you imported it correctly, you can go to the test database in the mongo shell and conform that
+
+> db.zips.count()
+
+
+yields 29,467 documents.
+
+The project operator can extract the first digit from any field. For example, to extract the first digit from the city field,
+you could write this query:
+
+db.zips.aggregate([
+    {$project: 
+     {
+	first_char: {$substr : ["$city",0,1]},
+     }	 
+   }
+])
+
+Using the aggregation framework, calculate the sum total of people who are living in a zip code where the city starts with a digit.
+Choose the answer below.
+
+Note that you will need to probably change your projection to send more info through than just that first character. Also, you will
+need a filtering step to get rid of all documents where the city does not start with a digital (0-9).
+*298015
+345232
+245987
+312893
+158249
+543282
+
+db.zips.aggregate([
+    { $project: { first_char: {$substr : ["$city",0,1]}, pop: 1 }},
+    { $match: { first_char: /^\d.*$/ }},
+	{ 
+		$group: {
+			_id: null,
+			total: { $sum: "$pop" }
+		}	
+	}    
+])
+{ "result" : [ { "_id" : null, "total" : 298015 } ], "ok" : 1 

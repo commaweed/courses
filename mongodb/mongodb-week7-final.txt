@@ -1,0 +1,1206 @@
+Final: 
+
+------------------------------------------------------------------------------------
+Question 1
+------------------------------------------------------------------------------------
+
+Please download the Enron email dataset enron.zip, unzip it and then restore it using mongorestore. 
+It should restore to a collection called "messages" in a database called "enron". 
+Note that this is an abbreviated version of the full corpus. There should be 120,477 documents after restore.
+
+Inspect a few of the documents to get a basic understanding of the structure. 
+Enron was an American corporation that engaged in a widespread accounting fraud and subsequently failed.
+
+In this dataset, each document is an email message. Like all Email messages, there is one sender but there can be multiple recipients.
+
+Construct a query to calculate the number of messages sent by Andrew Fastow, CFO, to Jeff Skilling, the president.
+Andrew Fastow's email addess was andrew.fastow@enron.com. Jeff Skilling's email was jeff.skilling@enron.com.
+
+For reference, the number of email messages from Andrew Fastow to John Lavorato (john.lavorato@enron.com) was 1.
+1
+3
+5
+7
+9
+12
+
+$ unzip enron.zip
+Archive:  enron.zip
+   creating: dump/enron/
+  inflating: dump/enron/messages.bson  
+  inflating: dump/enron/messages.metadata.json  
+$ mongorestore
+connected to: 127.0.0.1
+Fri Feb 21 13:55:12.233 dump/enron/messages.bson
+Fri Feb 21 13:55:12.235 	going into namespace [enron.messages]
+Fri Feb 21 13:55:15.011 		Progress: 25358057/396236668	6%	(bytes)
+Fri Feb 21 13:55:18.047 		Progress: 60280145/396236668	15%	(bytes)
+Fri Feb 21 13:55:21.081 		Progress: 99309671/396236668	25%	(bytes)
+Fri Feb 21 13:55:24.015 		Progress: 116258073/396236668	29%	(bytes)
+Fri Feb 21 13:55:27.016 		Progress: 141042113/396236668	35%	(bytes)
+Fri Feb 21 13:55:30.040 		Progress: 166129080/396236668	41%	(bytes)
+Fri Feb 21 13:55:33.012 		Progress: 187687346/396236668	47%	(bytes)
+Fri Feb 21 13:55:36.020 		Progress: 221291746/396236668	55%	(bytes)
+Fri Feb 21 13:55:39.052 		Progress: 243359654/396236668	61%	(bytes)
+Fri Feb 21 13:55:42.013 		Progress: 263332032/396236668	66%	(bytes)
+Fri Feb 21 13:55:45.064 		Progress: 282349278/396236668	71%	(bytes)
+Fri Feb 21 13:55:48.095 		Progress: 299022842/396236668	75%	(bytes)
+Fri Feb 21 13:55:51.019 		Progress: 320479888/396236668	80%	(bytes)
+Fri Feb 21 13:55:54.031 		Progress: 343875285/396236668	86%	(bytes)
+Fri Feb 21 13:55:57.036 		Progress: 363852340/396236668	91%	(bytes)
+Fri Feb 21 13:56:00.045 		Progress: 381201120/396236668	96%	(bytes)
+120477 objects found
+Fri Feb 21 13:56:01.824 	Creating index: { key: { _id: 1 }, ns: "enron.messages", name: "_id_" }
+> use enron;
+switched to db enron
+> show collections;
+messages
+system.indexes
+> db.messages.findOne();
+{
+	"_id" : ObjectId("4f16fc97d1e2d32371003f02"),
+	"body" : "COURTYARD\n\nMESQUITE\n2300 HWY 67\nMESQUITE, TX  75150\ntel: 972-681-3300\nfax: 972-681-3324\n\nHotel Information: http://courtyard.com/DALCM\n\n\nARRIVAL CONFIRMATION:\n Confirmation Number:84029698\nGuests in Room: 2\nNAME: MR ERIC  BASS \nGuest Phone: 7138530977\nNumber of Rooms:1\nArrive: Oct 6 2001\nDepart: Oct 7 2001\nRoom Type: ROOM - QUALITY\nGuarantee Method:\n Credit card guarantee\nCANCELLATION PERMITTED-BEFORE 1800 DAY OF ARRIVAL\n\nRATE INFORMATION:\nRate(s) Quoted in: US DOLLAR\nArrival Date: Oct 6 2001\nRoom Rate: 62.10  per night. Plus tax when applicable\nRate Program: AAA AMERICAN AUTO ASSN\n\nSPECIAL REQUEST:\n NON-SMOKING ROOM, GUARANTEED\n   \n\n\nPLEASE DO NOT REPLY TO THIS EMAIL \nAny Inquiries Please call 1-800-321-2211 or your local\ninternational toll free number.\n \nConfirmation Sent: Mon Jul 30 18:19:39 2001\n\nLegal Disclaimer:\nThis confirmation notice has been transmitted to you by electronic\nmail for your convenience. Marriott's record of this confirmation\nnotice is the official record of this reservation. Subsequent\nalterations to this electronic message after its transmission\nwill be disregarded.\n\nMarriott is pleased to announce that High Speed Internet Access is\nbeing rolled out in all Marriott hotel brands around the world.\nTo learn more or to find out whether your hotel has the service\navailable, please visit Marriott.com.\n\nEarn points toward free vacations, or frequent flyer miles\nfor every stay you make!  Just provide your Marriott Rewards\nmembership number at check in.  Not yet a member?  Join for free at\nhttps://member.marriottrewards.com/Enrollments/enroll.asp?source=MCRE\n\n",
+	"filename" : "2.",
+	"headers" : {
+		"Content-Transfer-Encoding" : "7bit",
+		"Content-Type" : "text/plain; charset=us-ascii",
+		"Date" : ISODate("2001-07-30T22:19:40Z"),
+		"From" : "reservations@marriott.com",
+		"Message-ID" : "<32788362.1075840323896.JavaMail.evans@thyme>",
+		"Mime-Version" : "1.0",
+		"Subject" : "84029698 Marriott  Reservation Confirmation Number",
+		"To" : [
+			"ebass@enron.com"
+		],_i
+		"X-FileName" : "eric bass 6-25-02.PST",
+		"X-Folder" : "\\ExMerge - Bass, Eric\\Personal",
+		"X-From" : "Reservations@Marriott.com",
+		"X-Origin" : "BASS-E",
+		"X-To" : "EBASS@ENRON.COM",
+		"X-bcc" : "",
+		"X-cc" : ""
+	},
+	"mailbox" : "bass-e",
+	"subFolder" : "personal"
+}
+> db.messages.find({ "headers.From": "andrew.fastow@enron.com"}, { _id: 0, headers.From: 1, headers.To:1});
+Fri Feb 21 14:03:49.844 SyntaxError: Unexpected token .
+> db.messages.find({ "headers.From": "andrew.fastow@enron.com"}, { _id: 0, "headers.From": 1, "headers.To":1});
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "louise.kitchen@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "louise.kitchen@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "louise.kitchen@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "john.lavorato@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "jeff.skilling@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "jeff.skilling@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "jeff.skilling@enron.com" ] } }
+> db.messages.find({ "headers.From": "andrew.fastow@enron.com", "headers.To": { "$in": ["jeff.skilling@enron.com"]}}, { _id: 0, "headers.From": 1, "headers.To":1});
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "jeff.skilling@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "jeff.skilling@enron.com" ] } }
+{ "headers" : { "From" : "andrew.fastow@enron.com", "To" : [  "jeff.skilling@enron.com" ] } }
+> db.messages.find({ "headers.From": "andrew.fastow@enron.com", "headers.To": { "$in": ["jeff.skilling@enron.com"]}}, { _id: 0, "headers.From": 1, "headers.To":1}).count();
+3
+
+ANSWER: 3
+
+------------------------------------------------------------------------------------
+Question 2
+------------------------------------------------------------------------------------
+
+ Final: Question 2
+Please use the Enron dataset you imported for the previous problem. For this question you will use the aggregation framework
+to figure out pairs of people that tend to communicate a lot. To do this, you will need to unwind the To list for each message.
+
+This problem is a little tricky because a recipient may appear more than once in the To list for a message. 
+You will need to fix that in a stage of the aggregation before doing your grouping and counting of (sender, recipient) pairs.
+
+Which pair of people have the greatest number of messages in the dataset?
+susan.mara@enron.com to jeff.dasovich@enron.com
+susan.mara@enron.com to richard.shapiro@enron.com
+soblander@carrfut.com to soblander@carrfut.com
+susan.mara@enron.com to james.steffes@enron.com
+evelyn.metoyer@enron.com to kate.symes@enron.com
+susan.mara@enron.com to alan.comnes@enron.com
+
+> db.messages.aggregate([
+	/* limit results to desired fields and unwind the to field, duplicates can exist */
+	{ $project: { _id: "$_id", from: "$headers.From", to: "$headers.To" }},
+	{ $unwind: "$to" },
+	
+	/* get a unique set of to fields then unwind again 
+	{ 
+		$group: {
+			_id: {
+				_id: "$_id",
+				from: "$from"
+			}, 
+			unique_to: { "$addToSet":  "$to" }
+		}	
+	}, 
+	{ $project: { _id: 0, from: "$_id.from", to: "$unique_to" }},
+	{ $unwind: "$to" },*/
+	
+	/* group by sum of from-to combinations and sort descending */
+	{ 
+		$group: {
+			_id: {
+				from: "$from",
+				to: "$to"
+			}, 
+			total: { "$sum":  1 }
+		}	
+	},	
+	{ $sort: { total: -1 } },
+	
+	{ $limit: 5 }  
+]);
+
+{
+	"result" : [
+		{
+			"_id" : {
+				"from" : "susan.mara@enron.com",
+				"to" : "jeff.dasovich@enron.com"
+			},
+			"total" : 750
+		},
+		{
+			"_id" : {
+				"from" : "soblander@carrfut.com",
+				"to" : "soblander@carrfut.com"
+			},
+			"total" : 679
+		},
+		{
+			"_id" : {
+				"from" : "susan.mara@enron.com",
+				"to" : "james.steffes@enron.com"
+			},
+			"total" : 646
+		},
+		{
+			"_id" : {
+				"from" : "susan.mara@enron.com",
+				"to" : "richard.shapiro@enron.com"
+			},
+			"total" : 616
+		},
+		{
+			"_id" : {
+				"from" : "evelyn.metoyer@enron.com",
+				"to" : "kate.symes@enron.com"
+			},
+			"total" : 567
+		}
+	],
+	"ok" : 1
+}
+
+ANSWER:  susan.mara@enron.com to jeff.dasovich@enron.com
+
+------------------------------------------------------------------------------------
+Question 3
+------------------------------------------------------------------------------------
+
+This is a Hands On problem. In this problem, the database will begin in an initial state, you will manipulate it, 
+and we will verify that the database is in the correct final state when you click 'submit'. If you need to start 
+over at any point, you can click 'reset' to re-initialize the database, but this will not change your answer if 
+you have already clicked 'submit'. If you wish to change your answer, get the database into the correct state, 
+and then click 'submit'. If you leave the question and come back, the database will re-initialize. If you have 
+clicked the 'submit' button at least once, you will see the word "Submitted" below the shell.
+
+In this problem you will update a document in the messages collection to illustrate your mastery of updating documents
+from the shell. In fact, we've created a collection with a very similar schema to the Enron dataset, but filled
+instead with randomly generated data.
+
+Please add the email address "mrpotatohead@10gen.com" to the list of addresses in the "headers.To" array for the 
+document with "headers.Message-ID" of "<8147308.1075851042335.JavaMail.evans@thyme>"
+
+This is a fully functional web shell, so please press enter for your query to get passed to the server, just like 
+you would for the command line shell. 
+
+> db.messages.findOne({"headers.Message-ID":"<8147308.1075851042335.JavaMail.evans@thyme>"});
+{
+	"_id" : ObjectId("5307ac9b132c1f6787b34e0b"),
+	"body" : "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+	"filename" : "1071.",
+	"mailbox" : "campbell-j",
+	"headers" : {
+		"X-cc" : "",
+		"From" : "e.carson@mailinator.com",
+		"Subject" : "Some reasonable subject.",
+		"Content-Transfer-Encoding" : "7bit",
+		"X-bcc" : "",
+		"To" : [
+			"jerry-campbell@enron.com"
+		],
+		"X-ORIGIN" : "CAMPBELL-J",
+		"Date" : "2001-07-27T05:09:05",
+		"X-To" : "E.CARSON@MAILINATOR.COM",
+		"Message-ID" : "<8147308.1075851042335.JavaMail.evans@thyme>",
+		"Content-Type" : "text/plain; charset=us-ascii",
+		"Mime-Version" : "1.0"
+	},
+	"Sub-Folder" : "golf"
+}
+> db.messages.find({"headers.Message-ID":"<8147308.1075851042335.JavaMail.evans@thyme>"}).count();
+1
+> db.messages.update({"headers.Message-ID":"<8147308.1075851042335.JavaMail.evans@thyme>"}, { $push: { "headers.To": "mrpotatohead@10gen.com" }});
+> db.messages.find({"headers.Message-ID":"<8147308.1075851042335.JavaMail.evans@thyme>"});
+
+------------------------------------------------------------------------------------
+Question 4
+------------------------------------------------------------------------------------
+
+Enhancing the Blog to support viewers liking certain comments
+In this problem, you will be enhancing the blog project to support users liking certain comments and the like counts 
+showing up the in the permalink page.
+
+Start by downloading the code in final-problem4.zip and posts.json files from the Download Handout link. Load up the blog
+dataset posts.json. The user interface has already been implemented for you. It's not fancy. The /post URL shows the like
+counts next to each comment and displays a Like button that you can click on. That Like button POSTS to the /like URL on
+the blog, makes the necessary changes to the database state (you are implementing this), and then redirects the browser back
+to the permalink page.
+
+This full round trip and redisplay of the entire web page is not how you would implement liking in a modern web app, but it
+makes it easier for us to reason about, so we will go with it.
+
+Your job is to search the code for the string "XXX work here" and make the necessary changes. You can choose whatever schema 
+you want, but you should note that the entry_template makes some assumptions about the how the like value will be encoded and
+if you go with a different convention than it assumes, you will need to make some adjustments.
+
+It is possible to solve this problem by putting NOTHING in one of the XXX spots and adding only a SINGLE LINE to the other
+spot to properly increment the like count. If you decide to use a different schema than the entry_template is expecting, 
+then you will likely to work in both spots. The validation script does not look at the database. It looks at the blog.
+
+The validation script, final4-validate.py, will fetch your blog, go to the first post's permalink page and attempt to 
+increment the vote count. You run it as follows:
+
+python final4-validate.py
+
+Remember that the blog needs to be running as well as Mongo. The validation script takes some options if you want to
+run outside of localhost.
+
+After you have gotten it working, enter the validation string below.
+
+> use blog
+switched to db blog
+> show collections;
+posts
+sessions
+system.indexes
+users
+
+$ mongoimport -d blogs -c posts --drop zips.json
+connected to: 127.0.0.1
+Fri Feb 21 15:05:52.227 dropping: blogs.posts
+Fri Feb 21 15:05:55.049 		Progress: 277817/2900475	9%
+Fri Feb 21 15:05:55.052 			2800	933/second
+Fri Feb 21 15:05:58.077 		Progress: 624091/2900475	21%
+Fri Feb 21 15:05:58.080 			6300	1050/second
+Fri Feb 21 15:06:01.006 		Progress: 955840/2900475	32%
+Fri Feb 21 15:06:01.009 			9700	1077/second
+Fri Feb 21 15:06:04.049 		Progress: 1300524/2900475	44%
+Fri Feb 21 15:06:04.053 			13200	1100/second
+Fri Feb 21 15:06:07.036 		Progress: 1623426/2900475	55%
+Fri Feb 21 15:06:07.040 			16500	1100/second
+Fri Feb 21 15:06:10.009 		Progress: 1949396/2900475	67%
+Fri Feb 21 15:06:10.013 			19800	1100/second
+Fri Feb 21 15:06:13.036 		Progress: 2274882/2900475	78%
+Fri Feb 21 15:06:13.039 			23100	1100/second
+Fri Feb 21 15:06:16.049 		Progress: 2598882/2900475	89%
+Fri Feb 21 15:06:16.054 			26400	1100/second
+Fri Feb 21 15:06:18.808 check 9 29470
+Fri Feb 21 15:06:18.810 imported 29470 objects
+
+eclipse_workspace/final-problem4$ cat run.sh 
+mvn compile exec:java -Dexec.mainClass=course.BlogController
+
+eclipse_workspace/final-problem4$ ./run.sh
+[INFO] Scanning for projects...
+[INFO]                                                                         
+[INFO] ------------------------------------------------------------------------
+[INFO] Building M101J 1.0-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ M101J ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] Copying 8 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:2.3.2:compile (default-compile) @ M101J ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] >>> exec-maven-plugin:1.2.1:java (default-cli) @ M101J >>>
+[INFO] 
+[INFO] <<< exec-maven-plugin:1.2.1:java (default-cli) @ M101J <<<
+[INFO] 
+[INFO] --- exec-maven-plugin:1.2.1:java (default-cli) @ M101J ---
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+== Spark has ignited ...
+>> Listening on 0.0.0.0:8082
+
+course.BlogPostDAO:
+
+    public void likePost(final String permalink, final int ordinal) {
+
+	// XXX Final Exam, Please work here
+	// Add code to increment the num_likes for the 'ordinal' comment
+	// that was clicked on.
+	// provided you use num_likes as your key name, no other changes should be required
+	// alternatively, you can use whatever you like but will need to make a couple of other 
+	// changes to templates and post retrieval code.
+    	System.out.println("Updating document with permalink [" + permalink + "] and ordinal [" + ordinal + "]");
+    	
+    	
+    	//find the appropriate document to update according to the permalink
+    	BasicDBObject query = new BasicDBObject("permalink", permalink); 
+    	
+    	//increment the comments.{ordinal}.num_likes by 1
+    	//the {ordinal} represents the index position in the comments array (0-first doc, 1-second doc, 2-third doc, etc.)
+    	BasicDBObject updateDoc = new BasicDBObject("$inc", new BasicDBObject("comments." + ordinal + ".num_likes", 1));
+    	
+    	//submit
+    	this.postsCollection.update(query, updateDoc);
+    }
+    
+$ python final4-validate.py 
+Welcome to the M101 Final Exam, Question 4 Validation Checker
+Trying to grab the blog home page at url and find the first post. http://localhost:8082/
+Fount a post url:  /post/mxwnnnqaflufnqwlekfd
+Trying to grab the number of likes for url  http://localhost:8082/post/mxwnnnqaflufnqwlekfd
+Likes value  1
+Clicking on Like link for post:  /post/mxwnnnqaflufnqwlekfd
+Trying to grab the number of likes for url  http://localhost:8082/post/mxwnnnqaflufnqwlekfd
+Likes value  2
+Tests Passed for Final 4. Your validation code is 983nf93ncafjn20fn10f
+   
+------------------------------------------------------------------------------------
+Question 5
+------------------------------------------------------------------------------------
+
+Suppose your have a collection fubar with the following indexes created:
+
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"b" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_b_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_c_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "c_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"b" : 1,
+			"c" : -1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_b_1_c_-1"
+	}
+]
+
+Now suppose you want to run the following query against the collection.
+
+db.fubar.find({'a':{'$lt':10000}, 'b':{'$gt': 5000}}, {'a':1, 'c':1}).sort({'c':-1})
+
+Which of the following indexes could be used by MongoDB to assist in answering the query. Check all that apply.
+_id_ 
+a_1_b_1 
+a_1_c_1 
+c_1 
+a_1_b_1_c_-1 
+
+> use test
+> for (i=0; i < 100; i++) db.fubar.insert({a:i, b:i, c:i});
+> db.fubar.ensureIndex({a:1, b:1});
+> db.fubar.ensureIndex({a:1, c:1});
+> db.fubar.ensureIndex({c:1});
+> db.fubar.ensureIndex({a:1, b:1, c:-1});
+> db.fubar.getIndexes();
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"b" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_b_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_c_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "c_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"b" : 1,
+			"c" : -1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_b_1_c_-1"
+	}
+]
+> db.fubar.find({'a':{'$lt':100}, 'b':{'$gt': 50}}, {'a':1, 'c':1}).sort({'c':-1}).explain();
+{
+	"cursor" : "BtreeCursor a_1_b_1",
+	"isMultiKey" : false,
+	"n" : 49,
+	"nscannedObjects" : 49,
+	"nscanned" : 98,
+	"nscannedObjectsAllPlans" : 343,
+	"nscannedAllPlans" : 490,
+	"scanAndOrder" : true,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 1,
+	"indexBounds" : {
+		"a" : [
+			[
+				-1.7976931348623157e+308,
+				100
+			]
+		],
+		"b" : [
+			[
+				50,
+				1.7976931348623157e+308
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+
+* with all indices present, it would naturally select a_1_b_1
+* removing it, it would select 
+
+> db.fubar.dropIndex("a_1_b_1");
+{ "nIndexesWas" : 5, "ok" : 1 }
+> db.fubar.getIndexes();
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_c_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "c_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"b" : 1,
+			"c" : -1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_b_1_c_-1"
+	}
+]
+> db.fubar.find({'a':{'$lt':100}, 'b':{'$gt': 50}}, {'a':1, 'c':1}).sort({'c':-1}).explain();
+{
+	"cursor" : "BtreeCursor a_1_b_1_c_-1",
+	"isMultiKey" : false,
+	"n" : 49,
+	"nscannedObjects" : 49,
+	"nscanned" : 98,
+	"nscannedObjectsAllPlans" : 343,
+	"nscannedAllPlans" : 392,
+	"scanAndOrder" : true,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 2,
+	"indexBounds" : {
+		"a" : [
+			[
+				-1.7976931348623157e+308,
+				100
+			]
+		],
+		"b" : [
+			[
+				50,
+				1.7976931348623157e+308
+			]
+		],
+		"c" : [
+			[
+				{
+					"$maxElement" : 1
+				},
+				{
+					"$minElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}	
+
+* now drop the index it just used "a_1_b_1_c_-1"
+
+> db.fubar.dropIndex("a_1_b_1_c_-1");
+{ "nIndexesWas" : 4, "ok" : 1 }
+> db.fubar.getIndexes();
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"a" : 1,
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "a_1_c_1"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "c_1"
+	}
+]
+> db.fubar.find({'a':{'$lt':100}, 'b':{'$gt': 50}}, {'a':1, 'c':1}).sort({'c':-1}).explain();
+{
+	"cursor" : "BtreeCursor a_1_c_1",
+	"isMultiKey" : false,
+	"n" : 49,
+	"nscannedObjects" : 100,
+	"nscanned" : 100,
+	"nscannedObjectsAllPlans" : 300,
+	"nscannedAllPlans" : 300,
+	"scanAndOrder" : true,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 1,
+	"indexBounds" : {
+		"a" : [
+			[
+				-1.7976931348623157e+308,
+				100
+			]
+		],
+		"c" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+
+* now drop the index it just used "a_1_c_1"
+
+> db.fubar.dropIndex("a_1_c_1");
+{ "nIndexesWas" : 3, "ok" : 1 }
+> db.fubar.getIndexes();
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "_id_"
+	},
+	{
+		"v" : 1,
+		"key" : {
+			"c" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "c_1"
+	}
+]
+> db.fubar.find({'a':{'$lt':100}, 'b':{'$gt': 50}}, {'a':1, 'c':1}).sort({'c':-1}).explain();
+{
+	"cursor" : "BtreeCursor c_1 reverse",
+	"isMultiKey" : false,
+	"n" : 49,
+	"nscannedObjects" : 100,
+	"nscanned" : 100,
+	"nscannedObjectsAllPlans" : 200,
+	"nscannedAllPlans" : 200,
+	"scanAndOrder" : false,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		"c" : [
+			[
+				{
+					"$maxElement" : 1
+				},
+				{
+					"$minElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "javacourse1:27017"
+}
+
+* now drop the index it just used "c_1"
+
+> db.fubar.dropIndex("c_1");
+{ "nIndexesWas" : 2, "ok" : 1 }
+> db.fubar.getIndexes();
+[
+	{
+		"v" : 1,
+		"key" : {
+			"_id" : 1
+		},
+		"ns" : "test.fubar",
+		"name" : "_id_"
+	}
+]
+> db.fubar.find({'a':{'$lt':100}, 'b':{'$gt': 50}}, {'a':1, 'c':1}).sort({'c':-1}).explain();
+{
+	"cursor" : "BasicCursor",
+	"isMultiKey" : false,
+	"n" : 49,
+	"nscannedObjects" : 100,
+	"nscanned" : 100,
+	"nscannedObjectsAllPlans" : 100,
+	"nscannedAllPlans" : 100,
+	"scanAndOrder" : true,
+	"indexOnly" : false,
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 0,
+	"indexBounds" : {
+		
+	},
+	"server" : "javacourse1:27017"
+}
+
+IT DID NOT USE THE _id_ CURSOR
+
+
+ANSWER:
+	_id_ 			NOT USED
+	a_1_b_1			USED for query (it would select this one if all were present)
+	a_1_c_1			USED for query when "a_1_b_1" and "a_1_b_1_c_-1" were dropped
+	c_1 			USED for sorting when others were dropped 
+	a_1_b_1_c_-1 	USED for query if "a_1_b_1" is not present
+
+------------------------------------------------------------------------------------
+Question 6
+------------------------------------------------------------------------------------
+
+Suppose you have a collection of students of the following form:
+
+{
+	"_id" : ObjectId("50c598f582094fb5f92efb96"),
+	"first_name" : "John",
+	"last_name" : "Doe",
+	"date_of_admission" : ISODate("2010-02-21T05:00:00Z"),
+	"residence_hall" : "Fairweather",
+	"has_car" : true,
+	"student_id" : "2348023902",
+	"current_classes" : [
+		"His343",
+		"Math234",
+		"Phy123",
+		"Art232"
+	]
+}
+
+Now suppose that basic inserts into the collection, which only include the last name, first name and student_id,
+are too slow (we can't do enough of them per second from our program). What could potentially improve the speed of inserts.
+Check all that apply.
+Add an index on last_name, first_name if one does not already exist. 
+	- an index makes reads faster, but writes slower 
+	- Thus, adding an index may hurt performance
+Remove all indexes from the collection 
+	- an index makes reads faster, but writes slower 
+	- Thus, removing all indices could improve performance
+Provide a hint to MongoDB that it should not use an index for the inserts 
+	- if you want to tell mongodb exactly what index to use, you can do that with the hint command
+	- you append it to the end of the query - give json document that tells spells out the index
+	- to use no index hint({$natural:1})
+	- HOWEVER, this only works with queries and not with inserts
+	- Thus, this will not improve performance
+Set w=0, j=0 on writes 
+	- UNACKOWLEDGED - w=0, wtimout=0, fsync=false, j=false
+			1.  means don't send a gle at all
+			2.  why would you do this - if you want to sacrifice durability for very fast writes
+				once send gle, you have to wait for a round trip to occur
+	- thus, if replication is used, this could improve performance		
+Build a replica set and insert data into the secondary nodes to free up the primary nodes. 
+	- writes are only permitted on the primary node
+	- thus, this is not possible
+	
+ANSWER:
+	Remove all indexes from the collection 
+	Set w=0, j=0 on writes 
+
+------------------------------------------------------------------------------------
+Question 7
+------------------------------------------------------------------------------------
+
+You have been tasked to cleanup a photosharing database. The database consists of two collections, albums, and images. 
+Every image is supposed to be in an album, but there are orphan images that appear in no album. Here are some example 
+documents (not from the collections you will be downloading).
+
+> db.albums.findOne()
+{
+	"_id" : 67
+	"images" : [
+		4745,
+		7651,
+		15247,
+		17517,
+		17853,
+		20529,
+		22640,
+		27299,
+		27997,
+		32930,
+		35591,
+		48969,
+		52901,
+		57320,
+		96342,
+		99705
+	]
+}
+
+> db.images.findOne()
+{ "_id" : 99705, "height" : 480, "width" : 640 }
+
+From the above, you can conclude that the image with _id = 99705 is in album 67. It is not an orphan.
+
+Your task is to write a program to remove every image from the images collection that appears in no album. 
+Or put another way, if an image does not appear in at least one album, it's an orphan and should be removed 
+from the images collection.
+
+Download final7.zip from Download Handout link and use mongoimport to import the collections in albums.json and images.json.
+
+When you are done removing the orphan images from the collection, there should be 89,737 documents in the images 
+collection. To prove you did it correctly, what are the total number of images with the tag 'sunrises" after the
+removal of orphans? As as a sanity check, there are 49, 887 images that are tagged 'sunrises' before you remove
+the images.
+
+Hint: you might consider creating an index or two or your program will take a long time to run. 
+
+49,932
+47,678
+38,934
+44,787
+45,911
+
+$ ll
+-rw-r--r-- 1 student student  649046 Sep  1 23:40 albums.json
+-rw-r--r-- 1 student student 9635092 Sep  1 23:40 images.json
+student@javacourse1:~/_mongodb/final7$ mongoimport -d photo -c albums --drop albums.json
+connected to: 127.0.0.1
+Fri Feb 21 16:26:28.407 dropping: photo.albums
+Fri Feb 21 16:26:29.569 check 9 1000
+Fri Feb 21 16:26:29.571 imported 1000 objects
+student@javacourse1:~/_mongodb/final7$ mongoimport -d photo -c images --drop images.json
+connected to: 127.0.0.1
+Fri Feb 21 16:26:41.815 dropping: photo.images
+Fri Feb 21 16:26:44.064 		Progress: 227344/9635092	2%
+Fri Feb 21 16:26:44.068 			2400	800/second
+Fri Feb 21 16:26:47.023 		Progress: 562788/9635092	5%
+Fri Feb 21 16:26:47.026 			5900	983/second
+Fri Feb 21 16:26:50.072 		Progress: 905990/9635092	9%
+Fri Feb 21 16:26:50.075 			9500	1055/second
+Fri Feb 21 16:26:53.044 		Progress: 1242160/9635092	12%
+Fri Feb 21 16:26:53.047 			13000	1083/second
+Fri Feb 21 16:26:56.027 		Progress: 1581378/9635092	16%
+Fri Feb 21 16:26:56.030 			16500	1100/second
+Fri Feb 21 16:26:59.067 		Progress: 1889916/9635092	19%
+Fri Feb 21 16:26:59.070 			19700	1094/second
+Fri Feb 21 16:27:02.039 		Progress: 2227918/9635092	23%
+Fri Feb 21 16:27:02.043 			23200	1104/second
+Fri Feb 21 16:27:05.045 		Progress: 2565728/9635092	26%
+Fri Feb 21 16:27:05.048 			26700	1112/second
+Fri Feb 21 16:27:08.025 		Progress: 2902801/9635092	30%
+Fri Feb 21 16:27:08.028 			30200	1118/second
+Fri Feb 21 16:27:11.067 		Progress: 3251146/9635092	33%
+Fri Feb 21 16:27:11.070 			33800	1126/second
+Fri Feb 21 16:27:14.015 		Progress: 3589866/9635092	37%
+Fri Feb 21 16:27:14.018 			37300	1130/second
+Fri Feb 21 16:27:17.068 		Progress: 3907889/9635092	40%
+Fri Feb 21 16:27:17.071 			40600	1127/second
+Fri Feb 21 16:27:20.023 		Progress: 4245294/9635092	44%
+Fri Feb 21 16:27:20.025 			44100	1130/second
+Fri Feb 21 16:27:23.061 		Progress: 4592660/9635092	47%
+Fri Feb 21 16:27:23.064 			47700	1135/second
+Fri Feb 21 16:27:26.027 		Progress: 4929244/9635092	51%
+Fri Feb 21 16:27:26.031 			51200	1137/second
+Fri Feb 21 16:27:29.049 		Progress: 5266862/9635092	54%
+Fri Feb 21 16:27:29.052 			54700	1139/second
+Fri Feb 21 16:27:32.026 		Progress: 5604400/9635092	58%
+Fri Feb 21 16:27:32.030 			58200	1141/second
+Fri Feb 21 16:27:35.089 		Progress: 5952089/9635092	61%
+Fri Feb 21 16:27:35.092 			61800	1144/second
+Fri Feb 21 16:27:38.025 		Progress: 6289142/9635092	65%
+Fri Feb 21 16:27:38.029 			65300	1145/second
+Fri Feb 21 16:27:41.061 		Progress: 6636353/9635092	68%
+Fri Feb 21 16:27:41.064 			68900	1148/second
+Fri Feb 21 16:27:44.027 		Progress: 6972760/9635092	72%
+Fri Feb 21 16:27:44.031 			72400	1149/second
+Fri Feb 21 16:27:47.083 		Progress: 7319824/9635092	75%
+Fri Feb 21 16:27:47.087 			76000	1151/second
+Fri Feb 21 16:27:50.043 		Progress: 7657433/9635092	79%
+Fri Feb 21 16:27:50.046 			79500	1152/second
+Fri Feb 21 16:27:53.029 		Progress: 7994552/9635092	82%
+Fri Feb 21 16:27:53.033 			83000	1152/second
+Fri Feb 21 16:27:56.013 		Progress: 8331317/9635092	86%
+Fri Feb 21 16:27:56.016 			86500	1153/second
+Fri Feb 21 16:27:59.091 		Progress: 8678932/9635092	90%
+Fri Feb 21 16:27:59.095 			90100	1155/second
+Fri Feb 21 16:28:02.052 		Progress: 9016326/9635092	93%
+Fri Feb 21 16:28:02.056 			93600	1155/second
+Fri Feb 21 16:28:05.045 		Progress: 9354926/9635092	97%
+Fri Feb 21 16:28:05.049 			97100	1155/second
+Fri Feb 21 16:28:07.540 check 9 100000
+Fri Feb 21 16:28:07.542 imported 100000 objects
+
+package finalexam.question7;
+
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
+import util.DatabaseUtil;
+import util.QueryCriteria;
+
+import com.mongodb.BasicDBList;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+
+public class RemoveOrphans {
+	
+	/**
+	 * The album cache where the key is image_id and the value is a collection of 
+	 * album_ids that have that image.
+	 */
+	private static final HashMap<Integer, Set<Integer>> ALBUM_CACHE = new HashMap<>();
+	
+	private static void populateAlbumCache() throws UnknownHostException {
+		System.out.println("Populating ALBUM_CACHE...");
+		//query the entire collection
+		DBObject query = new BasicDBObject();
+		
+		QueryCriteria queryCriteria = new QueryCriteria(DatabaseUtil.getCollection("photo", "albums"));
+		queryCriteria.setQuery(query);
+		
+		//submit the query
+		DBCursor cursor = queryCriteria.find();
+		try {
+			while (cursor.hasNext()) {
+				DBObject albumDocument = cursor.next();
+				Integer albumId = (Integer) albumDocument.get("_id");
+				BasicDBList imageList = (BasicDBList) albumDocument.get("images");
+				for (int i = 0; i < imageList.size(); i++) {
+					Integer imageId = (Integer) imageList.get(i);
+					
+					Set<Integer> albumIdSet = ALBUM_CACHE.get(imageId);
+					if (albumIdSet == null) {
+						albumIdSet = new HashSet<>();
+						ALBUM_CACHE.put(imageId, albumIdSet);
+					} else {
+						//apparently an image can only belong to one album in these collections
+						//oh well leaving it as is
+						System.out.println("an image belongs to more than one album ["+albumIdSet+"]");
+					}
+					
+					albumIdSet.add(albumId);
+				}
+			}
+		} finally {
+			cursor.close();
+		}
+		
+		System.out.println("ALBUM_CACHE populated with size [" + ALBUM_CACHE.size() + "]");
+	}
+	
+	private static void removeOrphans() throws UnknownHostException {
+		//query the entire collection
+		DBObject query = new BasicDBObject();
+		
+		DBCollection collection = DatabaseUtil.getCollection("photo", "images");
+		
+		QueryCriteria queryCriteria = new QueryCriteria(collection);
+		queryCriteria.setQuery(query);
+		
+		//submit the query
+		DBCursor cursor = queryCriteria.find();
+		try {
+			while (cursor.hasNext()) {
+				DBObject imageDocument = cursor.next();
+				Integer imageId = (Integer) imageDocument.get("_id");
+				
+				Set<Integer> set = ALBUM_CACHE.get(imageId);
+				if (set == null) {
+					//it's an orphan
+					System.out.println("Removing orphan, imageId [" + imageId + "]");
+					
+					//remove from collection
+					collection.remove(imageDocument);
+				} 
+			}
+		} finally {
+			cursor.close();
+		}		
+	}
+	
+	public static void main(String[] args) throws UnknownHostException {
+		System.out.println("Starting...");
+		populateAlbumCache();
+		removeOrphans();
+		System.out.println("Finished...");
+	}
+}
+
+* test to ensure the orphans were removed
+
+> use photo
+switched to db photo
+> db.images.find({}).count();
+89737
+> db.images.find({ tags: "sunrises"}).count();
+44787
+
+ANSWER:
+	44,787
+
+------------------------------------------------------------------------------------
+Question 8
+------------------------------------------------------------------------------------
+
+Supposed we executed the following Java code. How many animals will be inserted into the "animals" collection?
+
+public class Question8 
+{
+        public static void main(String[] args) throws IOException 
+        {
+            MongoClient c =  new MongoClient(new MongoClientURI("mongodb://localhost"));
+            DB db = c.getDB("test");
+            DBCollection animals = db.getCollection("animals");
+
+            BasicDBObject animal = new BasicDBObject("animal", "monkey");
+
+            animals.insert(animal);
+            animal.removeField("animal");
+            animal.append("animal", "cat");
+            animals.insert(animal);
+            animal.removeField("animal");
+            animal.append("animal", "lion");
+            animals.insert(animal);
+        }
+}
+
+0
+1
+2
+3
+
+Exception in thread "main" com.mongodb.MongoException$DuplicateKey: E11000 duplicate key error index: test.animals.$_id_  dup key: { : ObjectId('5307d3e7e4b0a7a44398eafa') }
+	at com.mongodb.CommandResult.getException(CommandResult.java:98)
+	at com.mongodb.CommandResult.throwOnError(CommandResult.java:134)
+	at com.mongodb.DBTCPConnector._checkWriteError(DBTCPConnector.java:142)
+	at com.mongodb.DBTCPConnector.say(DBTCPConnector.java:183)
+	at com.mongodb.DBTCPConnector.say(DBTCPConnector.java:155)
+	at com.mongodb.DBApiLayer$MyCollection.insert(DBApiLayer.java:270)
+	at com.mongodb.DBApiLayer$MyCollection.insert(DBApiLayer.java:226)
+	at com.mongodb.DBCollection.insert(DBCollection.java:75)
+	at com.mongodb.DBCollection.insert(DBCollection.java:59)
+	at com.mongodb.DBCollection.insert(DBCollection.java:104)
+	at finalexam.question8.Question8.main(Question8.java:24)
+
+
+> use test
+switched to db test
+> show collections;
+animals
+fubar
+names
+scores
+system.indexes
+zips
+> db.animals.find({}).count();
+1
+> db.animals.find({});
+{ "_id" : ObjectId("5307d3e7e4b0a7a44398eafa"), "animal" : "monkey" }
+
+------------------------------------------------------------------------------------
+Question 9
+------------------------------------------------------------------------------------
+
+Imagine an electronic medical record database designed to hold the medical records of every individual in the United States.
+Because each person has more than 16MB of medical history and records, it's not feasible to have a single document for every
+patient. Instead, there is a patient collection that contains basic information on each person and maps the person to a 
+patient_id, and a record collection that contains one document for each test or procedure. One patient may have dozens or even
+hundreds of documents in the record collection.
+
+We need to decide on a shard key to shard the record collection. What's the best shard key for the record collection, provided
+that we are willing to run inefficient scatter-gather operations to do infrequent research and run studies on various diseases
+and cohorts? That is, think mostly about the operational aspects of such a system. And by operational, we mean, think about what
+the most common operations that this systems needs to perform day in and day out.
+
+patient_id
+_id
+Primary care physician (your principal doctor that handles everyday problems)
+Date and time when medical record was created
+Patient first name
+Patient last name
+
+* how to choose a shard key in practice
+1.  sufficient cardinality - sufficient variety of values (a large number of values)
+2.  avoid hot spotting in writes
+	- occurs for anything that is monotonically increasing - example is id that increases infinitely using timestamp
+	- inserts will continue to hammer one shard
+	- maybe choose a composite key (e.g. vendor, order_date)
+
+ANSWER:
+	patient_id (assuming it is not a monotonically increasing ID)
+
+------------------------------------------------------------------------------------
+Question 10
+------------------------------------------------------------------------------------
+
+Understanding the output of explain We perform the following query on the enron dataset:
+
+db.messages.find({'headers.Date':{'$gt': new Date(2001,3,1)}},{'headers.From':1, _id:0}).sort({'headers.From':1}).explain()
+
+and get the following explain output.
+
+
+{
+	"cursor" : "BtreeCursor headers.From_1",	<-- used an index and only for the sort (it appears)
+	"isMultiKey" : false,						<-- none of the values are arrays, so this is not multikey
+	"n" : 83057,								<-- number of documents that is returned
+	"nscannedObjects" : 120477,					<-- number of documents that were scanned to answer the query
+	"nscanned" : 120477,						<-- number of index entries or docs that were looked at
+	"nscannedObjectsAllPlans" : 120581,
+	"nscannedAllPlans" : 120581,
+	"scanAndOrder" : false,
+	"indexOnly" : false,						<-- the query could not be satisfied with just the index
+	"nYields" : 0,
+	"nChunkSkips" : 0,
+	"millis" : 250,								<-- how long it took in milliseconds to execute the query
+	"indexBounds" : {							<-- shows the bounds that were used to look up the index
+		"headers.From" : [
+			[
+				{
+					"$minElement" : 1
+				},
+				{
+					"$maxElement" : 1
+				}
+			]
+		]
+	},
+	"server" : "Andrews-iMac.local:27017"
+}
+
+
+
+
+Check below all the statements that are true about the way MongoDB handled this query.
+The query did not utilize an index to figure out which documents match the find criteria. 
+	- this appears to be true because the index that it used seems to be for sorting
+The query used an index for the sorting phase. 
+	- this appears to be true because the index that it used seems to be for sorting
+The query returned 120,477 documents
+	- this is false because "n" : 83057
+The query performed a full collection scan 
+	- this appears to be true because the two values match
+	"nscannedObjects" : 120477,					<-- number of documents that were scanned to answer the query
+	"nscanned" : 120477,						<-- number of index entries or docs that were looked at
+	

@@ -1,0 +1,8 @@
+grails create-app sftwitter
+grails install-plugin spring-security-core 
+   * had to modify BuildConfig.groovy - add  compile ":spring-security-core:2.0.0" to plugins
+rails s2-quickstart tjjenk2 User Authority
+grails create-domain-class tjjenk2.Status
+grails create-controller tjjenk2.StatusController
+
+

@@ -1,0 +1,74 @@
+a. install the vboxguestadditions.iso (run commands as root)
+
+1.    yum install dkms
+2.    use virtual box devices menu to mount the cd ISO
+3.  then run VBoxLinuxAdditions.run either by doing the autorun.sh or running that file from command-line
+4.    yum update
+
+I also noticed I did the following in history and I have no idea which one was required:
+
+   yum install "VirtualBox-5.0"
+   yum install virtualbox-guest-utils
+   yum install virtualbox-guest-additions-iso
+   yum install virtualbox-guest-additions
+
+b. to add 1920 x 1200 resolution (not this was my top resolution, you’ll have to figure out what yours is)
+as root do:
+
+1.  Use xrandr to figure out the name of your monitor (i.e. VGA-0) and all the currently supported resolution modes.
+    When run without any option, xrandr shows the names of different outputs available on the system (LVDS, VGA-0, etc.) and resolutions available on each: 
+
+    $ xrandr
+
+    # my system output (after I had configured it for 1920x1200 - the VGA-0 is my monitor name)
+    VGA-0 connected 1920x1200+0+0 0mm x 0mm
+       1920x1200     60.00*+
+       2560x1600     60.00  
+       2560x1440     60.00  
+       2048x1536     60.00  
+       1920x1600     60.00  
+       1920x1080     60.00  
+       1600x1200     60.00  
+       1680x1050     60.00  
+       1400x1050     60.00  
+       1280x1024     60.00  
+       1024x768      60.00  
+       800x600       60.00  
+       640x480       60.00
+
+    You can use xrandr to set different resolution (must be present in the above list) on some output (rate is only necessary if you see it more than once for the same mode): 
+
+    $ xrandr --output VGA-0 --mode 1920x1200 --rate 60        
+
+    Alternatively, the --auto option will turn the specified output on if it is off and set the preferred (maximum) resolution:
+
+    $ xrandr --output VGA-0 --auto
+
+2.    Due to buggy hardware or drivers, your monitor's correct resolutions may not always be detected by xrandr.  To add new modes, do:
+    a.  First, outside the VM in your windows OS, check your screen resolution settings so you know what values to pass cvt (e.g. 1920x1200 @ 60 hz)
+    b.    2nd, we run cvt to get the Modeline for the resolution we want (alternate command is gtf): 
+
+        $ cvt 1920 1200
+
+        For me it returned the following line:
+
+        # 1920x1200 59.88 Hz (CVT 2.30MA) hsync: 74.56 kHz; pclk: 193.25 MHz
+        Modeline "1920x1200_60.00" 193.25 1920 2056 2256 2592 1200 1203 1209 1245 -hsync +vsync
+    c.    Then we create a new xrandr mode. Note that the Modeline keyword needs to be ommited.
+
+        $ xrandr --newmode "1920x1200_60.00" 193.25 1920 2056 2256 2592 1200 1203 1209 1245 -hsync +vsync
+
+    d.    After creating it we need an extra step to add this new mode to our current output (VGA-0 in my case). 
+        We use just the name of the mode, since the parameters have been set previously.
+
+        $ xrandr --addmode VGA-0 "1920x1200_60.00"
+
+        I also see the following in my history, but it may have been something I tried that did not work:
+
+        $ xrandr --addmode default "1920x1200_60.00"
+
+c. you may need to yum install some things (I noticed I did - check history as root on your laptop to see what you installed there)
+
+1.    yum install xorg-x11-drv-qxl
+
+​

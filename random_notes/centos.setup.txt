@@ -1,0 +1,546 @@
+0.  log in as root
+
+1.  launch network manager to see what network script to edit
+    nmcli d
+   
+2.  edit the script
+    vi /etc/sysconfig/network-scripts/ifcfg-enp0s3
+   
+    make sure the following settings are set:
+   
+    BOOTPROTO=dhcp
+    ONBOOT=yes
+   
+3.  restart the network as a service
+    service network restart (or - service network start)
+
+4.  update the kernel
+    <follow> https://wiki.centos.org/PackageManagement/Yum/Priorities
+    yum install yum-plugin-priorities
+    yum install yum-priorities
+    vi /etc/yum/pluginconf.d/priorities.conf:
+        enabled=1
+        check_obsoletes=1
+    yum repolist all
+   
+    yum update
+    yum install kernel-devel kernel-headers gcc make
+    yum groupinstall "Development Tools"
+    uname -r                compare your kernel with the one running
+        rpm -qa | grep kernel | sort
+        if they don't match: yum -y upgrade kernel kernel-devel
+    reboot into the correct kernel that matches the kernel-devel version   
+   
+5.  mount the guest iso   
+    blkid <-- shows mounted devices
+    mkdir /media/cdrom
+    then adding the following to /etc/fstab:
+        /dev/cdrom /media/cdrom udf,iso9660 user,noauto 0 0
+    mount /dev/cdrom
+    cd /media/cdrom
+    sh VBoxLinuxAdditions.run
+   
+6.  didn't like GNOME, now trying MATE:
+
+This guide assumes you have a CentOS 7 minimal installation (NO GUI) with the development tools installed. If the Development Tools are not installed they can be by simply running yum groupinstall "Development Tools" in a terminal as root user.
+Sample of MATE Desktop Enviroment
+
+    First install the EPEL-repositories then install the X Window System
+
+            [root@45Drives ~]$ yum install epel-release
+            [root@45Drives ~]$ yum groupinstall "X Window system"
+
+    Install the MATE packages. This will take a few minutes
+
+            [root@45Drives ~]$ yum groupinstall "MATE Desktop"
+
+    Tell your system to start the Graphical Interface
+
+            [root@45Drives ~]$ systemctl isolate graphical.target
+
+    To have MATE boot up as the default desktop enviroment, enter the following command (the last two lines will spit out into the terminal when you run the first line).
+
+            [root@45Drives ~]$ systemctl set-default graphical.target
+            rm '/etc/systemd/system/default.target'
+            ln -s '/usr/lib/systemd/system/graphical.target' '/etc/systemd/system/default.target'
+
+    You will most likely want the Gnome Disk Utility as it the easiest way to interface with your disks. Once installed it can be found in: Applications -> Accessories -> Disks
+
+            [root@45Drives ~]$ yum install gnome-disk-utility
+
+7.  To install Konsole
+    yum install kdebase or yum install kdebase-apps
+    yum whatprovides /usr/bin/konsole
+    yum install konsole-4.10.5-3.el7.x86_64
+   
+8.  Increase screen resolution
+    a.  install the vboxguestadditions.iso
+        1.    yum install dkms
+        2.    use virtual box devices menu to mount the cd ISO
+        3.  then run VBoxLinuxAdditions.run either by doing the autorun.sh or running that file from command-line
+        4.    yum update
+       
+9.  Add a user using the OS menu
+    then add the user to the sudoers list by using visudo (don't use VIM)
+        visudo
+        tjjenk2 ALL=(ALL:ALL)   NOPASSWD:ALL
+        1st ALL:      applies to all hosts
+        2nd ALL:    can run commands as all users
+        3rd ALL:    can run commands as all groups
+        4th ALL:    applies to all commands
+       
+10. to add 1920 x 1200
+    as root
+    cvt 1920 1200
+    xrandr to find monitor name (i.e. VGA-0)
+    xrandr --output VGA-0 --mode 1920x1200
+11. Set up the shared folder
+    a.    In virtual box, choose settings -> shared folders -> machine folders
+        Folder Path: R:\virtual_box_shared_folder
+        Folder Name: tjjenk2_shared
+    b.    In Linux, to add tjjenk2 to the vboxsf group so I can access the shared drive /media/sf_tjjenk2_share
+        usermod -a -G vboxsf tjjenk2
+        getent group vboxsf <-- displays whether or not the above line worked
+        --> then either logout or do sudo su - tjjenk2 for a new session for it to work
+12. Install the nvidia driver
+    init 3    <-- exits the x windows
+
+    Login as root. Find the downloaded Nvidia driver on your disk. Make the file executable and then run it. Follow the prompts provided by the Nvidia installer text wizard. You should also make sure to install the 32-bit libs.
+
+    chmod +x <Nvidia file>.run
+    ./<Nvidia file>.run
+
+    Once this step is complete, go back into runlevel 5.
+
+    init 5 <-- gets you back to x windows
+
+
+# Use "grubby" to update all current and future kernels passing the video argument
+# for the Microsoft Hyper-V Synthetic Video Frame Buffer driver
+
+grubby --update-kernel=ALL --args="video=hyperv_fb:1024x768"
+reboot
+
+if that doesn't work try:
+
+1.    use cvt to figure out settings for desired resolution
+    cvt 1920 1200
+2.    It returns the line:
+    Modeline "1920x1200_60.00" 193.25 1920 2056 2256 2592 1200 1203 1209 1245 -hsync +vsync
+3.    Find out what monitors your system thinks it has. 
+    xrandr   
+
+/usr/bin/xrandr --output qxl-0 --mode 1600x900
+   
+Desktops
+
+Installing X Windows Desktop
+yum groupinstall "X Window System"
+startx
+
+Installing GNOME classic mode
+a.    yum -y groups install "GNOME Desktop"
+b.    startx
+
+for GNOME shell
+b.    echo "exec gnome-session" >> ~/.xinitrc
+c.    startx
+
+or
+
+set the system graphical login systemctl set-default graphical.target and reboot the system. After system starts
+
+    Click the button which is located next to the "Sign In" button.
+    Select "GNOME" on the list. (The default is GNOME Classic)
+    Click "Sign In" and log in with GNOME Shell.
+
+
+Installing KDE desktop
+
+a.     yum -y groups install "KDE Plasma Workspaces"
+b.    echo "exec startkde" >> ~/.xinitrc
+c.    startx
+   
+   
+Installing Cinnamon Desktop Environment:
+
+1.    Install Cinnamon Desktop Environment on here.
+
+    First Add the EPEL Repository (EPEL Repository which is provided from Fedora project.)
+    Extra Packages for Enterprise Linux (EPEL)
+
+        How to add EPEL Repository?
+
+        # yum -y install epel-release
+
+        # sed -i -e "s/\]$/\]\npriority=5/g" /etc/yum.repos.d/epel.repo # set [priority=5]
+        # sed -i -e "s/enabled=1/enabled=0/g" /etc/yum.repos.d/epel.repo # for another way, change to [enabled=0] and use it only when needed
+        # yum --enablerepo=epel install [Package] # if [enabled=0], input a command to use the repository
+
+        And now install the Cinnamon Desktop Environment from EPEL Repository:
+
+        # yum --enablerepo=epel -y install cinnamon*
+
+2.    Input a command like below after finishing installation:
+
+    # echo "exec /usr/bin/cinnamon-session" >> ~/.xinitrc
+    # startx
+
+3.    Cinnamon Desktop Environment will start. For first booting, initial setup runs and you have to configure it for first time.
+        Select System language first.
+        Select your keyboard type.
+        Add online accounts if you'd like to.
+        Finally click "Start using CentOS Linux".
+
+Installing MATE Desktop Environment:
+
+    Install MATE Desktop Environment on here.
+
+    # yum --enablerepo=epel -y groups install "MATE Desktop"
+
+    Input a command like below after finishing installation:
+
+    # echo "exec /usr/bin/mate-session" >> ~/.xinitrc
+    # startx
+   
+    yum install gnome-tweak-tool
+    2  nmcli d
+    3  vi /etc/sysconfig/network-scripts/ifcfg-enp0s3
+    4  service network restart
+    5  nmcli d
+    6  ping www.comcast.net
+    7  yum -y groups install "GNOME Desktop"
+    8  startx
+    9  yum grouplist
+   10  vi /etc/inittab
+   11  yum groupremove "GNOME Desktop"
+   12  yum grouplist
+   13  yum install epel-release
+   14  yum groupinstall "X Window system"
+   15  reboot
+   16  yum grouplist | grep "X Window"
+   17  pwd
+   18  ll
+   19  cd ..
+   20  ll
+   21  cd root
+   22  ll
+   23  yum grouplist | more
+   24  yum install epel-release
+   25  yum groupinstall "X Window system"
+   26  yum groupinstall "X Window System"
+   27  yum -y groupinstall "X Window System"
+   28  yum grouplist | more
+   29  yum groupinstall "MATE Desktop"
+   30  systemct1 isolate graphical.target
+   31  systemctl isolate graphical.target
+   32  yum install gnome-disk-utility
+   33  xrandr
+   34  yum install xorg-x11-drv-qxl
+   35  xrandr --output qxl-0 --mode 1600x900
+   36  xrandr --output qxl --mode 1600x900
+   37  xrandr
+   38  grubby                                                                                                                                                                                
+   39  grubby --update-kernel=ALL --args="video=hyperv_fb:1920x1200"                                                                                                                         
+   40  reboot                                                                                                                                                                                
+   41  systemct1 isolate graphical.target                                                                                                                                                    
+   42  systemctl isolate graphical.target                                                                                                                                                    
+   43  ll /etc/systemd/system/default.target                                                                                                                                                 
+   44  cat /etc/systemd/system/default.target                                                                                                                                                
+   45  rm /etc/systemd/system/default.target                                                                                                                                                 
+   46  ln                                                                                                                                                                                    
+   47  ln --help                                                                                                                                                                             
+   48  ln -s '/usr/lib/systemd/system/graphical.target' '/etc/systemd/system/default.target'                                                                                                 
+   49  ll
+   50  grubby --update-kernel=ALL --args="video=hyperv_fb:1600x900"
+   51  reboot
+   52  grubby --help
+   53  grubby --info
+   54  yum install kdebase
+   55  reboot
+   56  konsole
+   57  yum install kdebase
+   58  cvt 1920 1200
+   59  xrandr
+   60  xrandr --addmode default "1920x1200_60.00"
+   61  xrandr
+   62  reboot
+   63  shutdown
+   64  ll
+   65  cd ..
+   66  ll
+   67  cd /usr/share
+   68  ll
+   69  ll | grep virtual
+   70  yum install "VirtualBox-5.0"
+   71  cat /etc/yum.repos.d/
+   72  cd /etc/yum.repost.d
+   73  cd /etc/yum.repos.d
+   74  ll
+   75  cat epel.repo
+   76  yum install virtualbox-guest-utils
+   77  yum install virtualbox-guest-additions-iso
+   78  yum install virtualbox-guest-additions
+   79  cd /usr/share
+   80  ll
+   81  yum install dkms
+   82  cd /opt
+   83  ll
+   84  ls -al
+   85  cd ..
+   86  ll
+   87  cd opt
+   88  ll
+   89  cd
+   90  ll
+   91  cd /
+   92  ll
+   93  cd dev
+   94  ll
+   95  ls -altr
+   96  cd shm
+   97  ll
+   98  cd ..
+   99  ll
+  100  ls -altr
+  101  cd cdrom
+  102  cd sr0
+  103  cat cdrom
+  104  62;9;cll
+  105  clear
+  106  ls
+  107  clear
+  108  cd /
+  109  ll
+  110  cd dev
+  111  ll
+  112  ls -latr
+  113  yum update
+  114  reboot
+  115  ll
+  116  yum list available | grep kde
+  117  yum list available | grep kdebase
+  118  yum list available | grep kde-base
+  119  yum imstall kde-baseapps-devel.x86_64
+  120  yum groupinstall kde-baseapps-devel.x86_64
+  121  yum groupinstall kde-baseapps-devel.x86_64-4.10.5-4.el7
+  122  yum install kde-baseapps-devel.x86_64-4.10.5-4.el7
+  123  yum list installed
+  124  yum groupinfo "kdebase"
+  125  yum groupinfo kde
+  126  yum install kde-baseapps
+  127  yum whatprovides /usr/bin/konsole
+  128  ls /usr/bin | grep konsole
+  129  yum install konsole-4.10.5-3.el7.x86_64
+  130  ll
+  131  dir
+  132  ls -altr
+  133  cd /home/tjjenk2
+  134  dir
+  135  ll
+  136  ls -altr
+  137  vim .bashrc
+  138  ll
+  139  sudo su - tjjenk2
+  140  xrandr
+  141  cvt
+  142  cvt 1920 1200
+  143  xrandr --output VGA-0 --mode 1920x1200
+  144  ll
+  145  cd /etc/sudoers
+  146  cd /etc
+  147  vim sudoers
+  148  ll
+  149  ll | sud*
+  150  ll | grep sud
+  151  visudo
+  152  cat sudoers | grep tjjenk2
+  153  vim sudoers
+  154  visudo
+  155  cd
+  156  cd notes
+  157  mkdir notes
+  158  vim mongo.txt
+  159  cd /root/notes
+  160  ll
+  161  pwd
+  162  cd ..
+  163  ll
+  164  mv mongo.txt /home/tjjenk2
+  165  cd ..
+  166  ll
+  167  ll notes
+  168  ll
+  169  cd /root
+  170  ll
+  171  cat anaconda-ks.cfg
+  172  ;;
+  173  ll
+  174  cd notes
+  175  ll
+  176  cd ..
+  177  rm -rf notes
+  178  cd /home/tjjenk2
+  179  ll
+  180  mkdir notes
+  181  mv mongo.txt notes
+  182  ll
+  183  chown tjjenk2:tjjenk2 notes
+  184  ll
+  185  exit
+  186  ll
+  187  cd sf_tjjenk2_shared/
+  188  ll
+  189  usermod -a -G vboxsf tjjenk2
+  190  exit
+  191  usermod -a -G vboxsf tjjenk2
+  192  getent
+  193  getent group vboxsf
+  194  grep tjjenk2 /etc/passwd
+  195  ll
+  196  id tjjenk2
+  197  cd root
+  198  ll
+  199  cd ..
+  200  ll
+  201  cd /usr
+  202  ll
+  203  du -s
+  204  du -sh
+  205  cd ..
+  206  l
+  207  ll
+  208  pwd
+  209  ll
+  210  cd lib
+  211  ll
+  212  ]cd ..
+  213  ll
+  214  cd ..
+  215  ll
+  216  cd media
+  217  ll
+  218  cd ..
+  219  ll
+  220  cd mnt
+  221  ll
+  222  cd ..
+  223  ll
+  224  cd opt
+  225  ll
+  226  cd ..
+  227  ll
+  228  cd bin
+  229  ll
+  230  cd ..
+  231  ll
+  232  cd tmp
+  233  ll
+  234  cd ..
+  235  ll
+  236  cd var
+  237  ll
+  238  cd ..
+  239  ll
+  240  ll
+  241  c d..
+  242  ll
+  243  cd ~
+  244  ll
+  245  tree -d
+  246  cd apps
+  247  ll
+  248  cd ..
+  249  ll
+  250  pwd
+  251  ps -ef | grep tjjenk2
+  252  ps -ef | grep mongo
+  253  ll
+  254  mongos
+  255  mongo
+  256  ll
+  257  cd
+  258  exit
+  259  ll
+  260  cd /etc/
+  261  ll
+  262  cd yum.repos.d/
+  263  ll
+  264  yum search chrome
+  265  vim google-chrome.repo
+  266  yum info google-chrome-stable
+  267  yum install google-chrome-stable
+
+Increase screen resolution
+
+a.  install the vboxguestadditions.iso (run commands as root)
+    1.    yum install dkms
+    2.    use virtual box devices menu to mount the cd ISO
+    3.  then run VBoxLinuxAdditions.run either by doing the autorun.sh or running that file from command-line
+    4.    yum update
+   
+    I also noticed I did the following in history and I have no idea which one was required:
+   
+       yum install "VirtualBox-5.0"
+       yum install virtualbox-guest-utils
+       yum install virtualbox-guest-additions-iso
+       yum install virtualbox-guest-additions
+   
+b.  to add 1920 x 1200 resolution (not this was my top resolution, you'll have to figure out what yours is)
+    as root do:
+   
+    1.  Use xrandr to figure out the name of your monitor (i.e. VGA-0) and all the currently supported resolution modes.
+        When run without any option, xrandr shows the names of different outputs available on the system (LVDS, VGA-0, etc.) and resolutions available on each:
+       
+        $ xrandr
+       
+        # my system output (after I had configured it for 1920x1200 - the VGA-0 is my monitor name)
+        VGA-0 connected 1920x1200+0+0 0mm x 0mm
+           1920x1200     60.00*+
+           2560x1600     60.00 
+           2560x1440     60.00 
+           2048x1536     60.00 
+           1920x1600     60.00 
+           1920x1080     60.00 
+           1600x1200     60.00 
+           1680x1050     60.00 
+           1400x1050     60.00 
+           1280x1024     60.00 
+           1024x768      60.00 
+           800x600       60.00 
+           640x480       60.00
+   
+        You can use xrandr to set different resolution (must be present in the above list) on some output (rate is only necessary if you see it more than once for the same mode):
+       
+        $ xrandr --output VGA-0 --mode 1920x1200 --rate 60       
+       
+        Alternatively, the --auto option will turn the specified output on if it is off and set the preferred (maximum) resolution:
+
+        $ xrandr --output VGA-0 --auto
+       
+    2.    Due to buggy hardware or drivers, your monitor's correct resolutions may not always be detected by xrandr.  To add new modes, do:
+        a.  First, outside the VM in your windows OS, check your screen resolution settings so you know what values to pass cvt (e.g. 1920x1200 @ 60 hz)
+        b.    2nd, we run cvt to get the Modeline for the resolution we want (alternate command is gtf):
+
+
+            $ cvt 1920 1200
+
+            For me it returned the following line:
+       
+            # 1920x1200 59.88 Hz (CVT 2.30MA) hsync: 74.56 kHz; pclk: 193.25 MHz
+            Modeline "1920x1200_60.00" 193.25 1920 2056 2256 2592 1200 1203 1209 1245 -hsync +vsync
+        c.    Then we create a new xrandr mode. Note that the Modeline keyword needs to be ommited.
+
+            $ xrandr --newmode "1920x1200_60.00" 193.25 1920 2056 2256 2592 1200 1203 1209 1245 -hsync +vsync
+
+        d.    After creating it we need an extra step to add this new mode to our current output (VGA-0 in my case).
+            We use just the name of the mode, since the parameters have been set previously.
+           
+            $ xrandr --addmode VGA-0 "1920x1200_60.00"
+           
+            I also see the following in my history, but it may have been something I tried that did not work:
+           
+            $ xrandr --addmode default "1920x1200_60.00"
+               
+c.     you may need to yum install some things (I noticed I did - check history as root on your laptop to see what you installed there)
+    1.    yum install xorg-x11-drv-qxl

@@ -1,0 +1,47 @@
+Install Mongo
+1.  vim /etc/yum.repos.d/mongodb-org-3.2.repo
+[mongodb-org-3.2]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/3.2/x86_64/
+gpgcheck=0
+enabled=1
+2.  sudo yum install -y mongodb-org
+3.  vim /etc/mongod.conf (if necessary)
+    log path: /var/log/mongodb/mongod.log
+    dbPath: /var/lib/mongo (it is recommended we do not change it)
+    pidFilePath: /var/run/mongodb/mongod.pid
+    net: port: 27017 bindIp: 127.0.0.1    
+4.  You must configure SELinux to allow MongoDB to start on Red Hat Linux-based systems.  Three options:
+    a.  Disable SELinux entirely by changing the SELINUX setting to disabled in /etc/selinux/config.  SELINUX=disabled
+    b.  Set SELinux to permissive mode in /etc/selinux/config by changing the SELINUX setting to permissive.  SELINUX=permissive
+    c.  Enable access to the relevant ports (e.g. 27017) for SELinux if in enforcing mode. 
+        See Default MongoDB Port for more information on MongoDB’s default ports. For default settings, this can be accomplished by running
+	semanage port -a -t mongod_port_t -p tcp 27017
+5.  You can start the mongod process by issuing the following command:
+    sudo service mongod start
+6.  Verify that MongoDB has started successfully. You can verify that the mongod started by checking /var/log/mongodb/mongod.log for:
+    [initandlisten] waiting for connections on port <port>
+    where <port> is the port configured in /etc/mongod.conf, 27017 by default.
+7.  You can optionally ensure that MongoDB will start following a system reboot by issuing the following command:
+    sudo chkconfig mongod on
+8.  Stop MongoDB:  As needed, you can stop the mongod process by issuing the following command:
+    sudo service mongod stop
+9.  Restart MongoDB: You can restart the mongod process by issuing the following command:
+    sudo service mongod restart
+10. You can follow the state of the process for errors or important messages by watching the output in the /var/log/mongodb/mongod.log file.
+11. Error on startup, had to remove /tmp/mongodb-27017.sock
+
+# mongo settings
+/usr/bin/mongos -f /etc/mongos.conf
+
+pidfilepath=/var/run/mongodb/mongos.pid
+logpath=/var/log/mongo/mongos.log
+logappend=true
+fork=true
+port=x
+configdb = x.x.x.x:port1,y.y.y.y:port1,z.z.z.z:port1
+keyFile=/data/mongo/key
+sslOnNormalPorts=true
+sslPEMKeyFile=/etc/pki/private/identity.pem
+sslCAFile=/etc/pki/public/ca.crt
+sslAllowInvalidHostNames=true

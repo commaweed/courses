@@ -1,0 +1,10 @@
+yum install git
+yum install nslookup
+yum install bind-utils
+
+# needed for compiling git source
+sudo yum groupinstall "Development Tools"
+sudo yum install gettext-devel openssl-devel perl-CPAN perl-devel zlib-devel
+
+# need for https connectivity via git
+yum install expat expat-devel openssl openssl-devel curl-devel

@@ -1,0 +1,5 @@
+{change to apps and make temp dir and cp file to temp}
+dpkg -x Brackets.1.6.Extract.64-bit.deb .
+{remove everything but opts}
+cd brackets/lib
+sudo ln -s /lib64/libudev.so.1 ./libudev.
