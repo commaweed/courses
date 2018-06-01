@@ -1,0 +1,89 @@
+# docker for mac >= 1.12, Linux, Docker for windows 10
+# 9092 = kafka broker
+# 8081 = schema registry
+# 8082 = kafka rest proxy
+# 8083 = kafka connect distributed
+# 2181 = zookeeper
+# 3030 = web server
+docker run --rm -it -p 2181:2181 -p 3030:3030 -p 8081:8081 -p 8082:8082 -p 8083:8083 -p 9092:9092 -e ADV_HOST=127.0.0.1 landoop/fast-data-dev
+
+# kafka command line tools (launch container as kafka cli)
+docker run --rm -it --net=host landoop/fast-data-dev bash
+[tjjenk2:~/notes]$ docker run --rm -it --net=host landoop/fast-data-dev bash
+root@fast-data-dev / $ kafka-
+kafka-acls                        kafka-console-consumer            kafka-log-dirs                    kafka-replay-log-producer         kafka-rest-stop-service           kafka-streams-application-reset
+kafka-avro-console-consumer       kafka-console-producer            kafka-mirror-maker                kafka-replica-verification        kafka-run-class                   kafka-topics
+kafka-avro-console-producer       kafka-consumer-groups             kafka-preferred-replica-election  kafka-rest-run-class              kafka-server-start                kafka-verifiable-consumer
+kafka-broker-api-versions         kafka-consumer-perf-test          kafka-producer-perf-test          kafka-rest-start                  kafka-server-stop                 kafka-verifiable-producer
+kafka-configs                     kafka-delete-records              kafka-reassign-partitions         kafka-rest-stop                   kafka-simple-consumer-shel
+
+# kafka-topics examples
+kafka-topics --zookeeper 127.0.0.1:2181 --create --topic first_topic --partitions 3 --replication-factor 1
+kafka-topics --zookeeper 127.0.0.1:2181 --list
+kafka-topics --zookeeper 127.0.0.1:2181 --create --topic second_topic --partitions 3 --replication-factor 1
+
+# info about a particular topic
+kafka-topics --zookeeper 127.0.0.1:2181 --describe --topic first_topic
+Topic:first_topic       PartitionCount:3        ReplicationFactor:1     Configs:
+        Topic: first_topic      Partition: 0    Leader: 0       Replicas: 0     Isr: 0
+        Topic: first_topic      Partition: 1    Leader: 0       Replicas: 0     Isr: 0
+        Topic: first_topic      Partition: 2    Leader: 0       Replicas: 0     Isr: 0
+
+# deleting topics needs to have the config enabled (this may be something with docker, not sure)
+kafka-topics --zookeeper 127.0.0.1:2181 --topic second_topic --delete
+Topic second_topic is marked for deletion.
+Note: This will have no impact if delete.topic.enable is not set to true
+
+# publish data to kafka using kafka-console-producer
+kafka-console-producer --broker-list 127.0.0.1:9092 --topic first_topic
+>hi
+>hello
+# this sent the following messages to the topic
+[
+  {
+    "topic": "first_topic",
+    "key": "ée",
+    "value": "hello",
+    "partition": 0,
+    "offset": 0
+  },
+  {
+    "topic": "first_topic",
+    "key": "ée",
+    "value": "hi",
+    "partition": 1,
+    "offset": 0
+  }
+]
+
+# consuming data using kafka-console-consumer (new consumer uses bootstrap-server so you don't need --zookeeper)
+# should only have to interface with zookeeper when you create a topic
+# console consumer always starts reading from the end of a topic when it starts
+kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic first_topic
+is it working
+^CProcessed a total of 1 messages
+# to read from beginning
+kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic first_topic --from-beginning
+# from a particular partition
+kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic first_topic --from-beginning --partition 2
+# from a particular offset (vs from the beginning)
+root@fast-data-dev / $ kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic first_topic --offset 0 --partition 2  
+travis
+is it working
+^CProcessed a total of 2 messages
+root@fast-data-dev / $ kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic first_topic --offset 1 --partition 2  
+is it working
+^CProcessed a total of 1 messages
+
+# using consumer group (reads from beginning of topic and specifies a consumer group id; when we have a consumer as part of a group, it will commit offsets to kafka) - cannot reconsume after
+root@fast-data-dev / $ kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic first_topic --consumer-property group.id=mygroup1 --from-beginning
+hello
+another test for us
+hi
+udemy
+travis
+is it working
+^CProcessed a total of 6 messages
+root@fast-data-dev / $ kafka-console-consumer --bootstrap-server 127.0.0.1:9092 --topic first_topic --consumer-property group.id=mygroup1 --from-beginning
+^CProcessed a total of 0 messages
+
