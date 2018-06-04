@@ -1,0 +1,48 @@
+# java mission control (jmc) - flight recordings
+#		flight recordings are binary files
+
+# 4 different types of events
+# instant event
+#		data associated with the time the data was captures
+# requestable event
+#		polled from separate thread
+#		has a user configurable period
+# duration event
+#		has a start time and a stop time
+# timed event
+#		like duration event, but with user configurable threshold
+
+# jcmd - by itself gives list of running jvm's on the system
+[tjjenk2:~]$ jcmd
+26819 org.codehaus.groovy.tools.GroovyStarter --main org.codehaus.groovy.tools.shell.Main --conf /home/tjjenk2/apps/groovy-2.4.6/conf/groovy-starter.conf --classpath .
+24277 org.codehaus.groovy.tools.GroovyStarter --main groovy.ui.Console --conf /home/tjjenk2/apps/groovy-2.4.6/conf/groovy-starter.conf --classpath .
+2251 com.intellij.idea.Main
+5757 sun.tools.jcmd.JCmd
+
+# jcmd help shows you commands that are available in that particular jvm
+[tjjenk2:~]$ jcmd 2251 help
+2251:
+The following commands are available:
+VM.native_memory
+ManagementAgent.stop
+ManagementAgent.start_local
+ManagementAgent.start
+GC.rotate_log
+Thread.print
+GC.class_stats
+GC.class_histogram
+GC.heap_dump
+GC.run_finalization
+GC.run
+VM.uptime
+VM.flags
+VM.system_properties
+VM.command_line
+VM.
+
+# using GC.heap_dump from example above
+[tjjenk2:~]$ jcmd 2251 GC.heap_dump heap_dump.txt
+2251:
+Heap dump file created
+
+# if you see JFR running, you could do something like jcmd <pid> JFR.CHECK, etc.

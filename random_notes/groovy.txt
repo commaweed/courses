@@ -1,0 +1,58 @@
+# groovy course code
+https://github.com/cfaddict/apache-groovy-course
+
+# groovy console - AST Script to view semi-source and byte code
+groovyConsole
+
+# auto imports
+java.lang.*
+java.util.*
+java.io.*
+java.net.*
+groovy.lang.*
+groovy.util.*
+java.math.BigInteger
+java.math.BigDecimal
+
+# methods and classes are public by default
+
+# properties are private by default
+
+# don't need getters/setters
+
+# ast annotation types can be found the following package
+groovy.transform
+
+# grape is a jar dependency manager embedded in groovy (can be useful when working with groovy scripts)
+@Grapes(
+	@Grab(group='org.apache.commons', module='commons-lang3', version='3.4')
+)
+import org.apache.commons.lang3.text.WordUtils
+String name = "Test These Initials"
+WordUtils util = new WordUtils()
+println util.initials(name)
+
+# numbers
+# there are no primitives and literals will be coerced up depending upon length or type
+
+# times | upto | downto | step
+20.times { print '-' }
+1.upto(10) { num -> println num }
+10.downto(1) { num -> println num }
+0.step(1,0.1) { num -> println num }
+
+# regex
+def pattern = ~/a\b/ /* java.util.regex.Pattern */
+
+def text = "yo mama"
+def pattern = ~/yo m/
+def finder = text =~ pattern /* find pattern in text */
+println finder /* java.util.regex.Matcher */
+println finder.size() /* 1 */
+
+def text = "yo mama"
+def pattern = ~/yo m/
+def doesMatch = text ==~ pattern
+println doesMatch /* true */
+text = text.replaceFirst(pattern, "dog")
+println text /* dogama */
