@@ -8,7 +8,7 @@ sudo sh get-docker.sh
 #   - gives user ability to run a docker container later that could have root permission on the host
 #   - redhat won't work with this option - you have to be root
 #   - other than that, docker generally needs to run as root
-sudo usermod -aG docker tjjenk2
+sudo usermod -aG docker me
 
 # need docker machine and compose tools as well
 # you get these on docker's website in the documentation area not in the store
@@ -117,6 +117,292 @@ docker container exec -it my_nginx ping new_nginx # DNS resolution works; they a
 docker container run -it --name testcentos --rm centos:7 bash 
 docker container run -it --name testubuntu --rm ubuntu:14.04 bash
 
+# =======================================================================================
+# networking examples
+# =======================================================================================
+
+# in docker group; sudo not needed (some systems won't allow it -- need to be root)
+[me:~/data/courses]$ groups
+me docker vboxsf
+
+# containers with their auto-generated names
+[me:~/data/courses]$ docker container list --no-trunc --format 'table {{.Image}}\t{{.Names}}\t{{.Command}}'
+IMAGE                   NAMES               COMMAND
+landoop/fast-data-dev   eager_rosalind      "/usr/bin/dumb-init -- bash"
+landoop/fast-data-dev   gifted_jones        "/usr/bin/dumb-init -- bash"
+
+# listing host to container ports for a particular container
+[me:~/data/courses]$ docker container port lucid_nightingale
+8082/tcp -> 0.0.0.0:8082
+8083/tcp -> 0.0.0.0:8083
+9092/tcp -> 0.0.0.0:9092
+2181/tcp -> 0.0.0.0:2181
+3030/tcp -> 0.0.0.0:3030
+8081/tcp -> 0.0.0.0:8081
+
+# container'''s internal IP address for the virtual network it is on
+[me:~/data/courses]$ docker container inspect --format '''{{ .NetworkSettings.IPAddress }}' lucid_nightingale
+172.17.0.2
+
+# host and docker networks
+[me:~/data/courses]$ ifconfig
+docker0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+   inet 172.17.0.1  netmask 255.255.0.0  broadcast 172.17.255.255
+   inet6 fe80::42:d1ff:fe0f:1722  prefixlen 64  scopeid 0x20<link>
+   ether 02:42:d1:0f:17:22  txqueuelen 0  (Ethernet)
+   RX packets 6579  bytes 3911139 (3.7 MiB)
+   RX errors 0  dropped 0  overruns 0  frame 0
+   TX packets 13288  bytes 2253533 (2.1 MiB)
+   TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+enp0s3: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+   inet 10.0.2.15  netmask 255.255.255.0  broadcast 10.0.2.255
+   inet6 fe80::b021:62b9:a815:1c8d  prefixlen 64  scopeid 0x20<link>
+   ether 08:00:27:35:c6:d4  txqueuelen 1000  (Ethernet)
+   RX packets 1564876  bytes 2013272742 (1.8 GiB)
+   RX errors 0  dropped 0  overruns 0  frame 0
+   TX packets 260374  bytes 31774874 (30.3 MiB)
+   TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+# showing all of the networks that have been created in docker (bridge is default == docker0 above)
+# --network bridge --> default docker virtual network which is NAT'ed behind the Host IP
+[me:~/data/courses]$ docker network ls
+   NETWORK ID          NAME                DRIVER              SCOPE
+   dfc440a8cb5d        bridge              bridge              local
+   406dbffe9820        host                host                local
+   1241cf65cdb7        none                null                local
+
+# showing info about the bridge network; it also shows the containers attached to it
+[me:~/data/courses]$ docker network inspect bridge
+[
+   {
+      "Name": "bridge",
+      "Id": "dfc440a8cb5d3ec0986298ed5ec45e1476d0f85365b00d8113475d788f421355",
+      "Created": "2018-06-01T18:28:49.304733642-04:00",
+      "Scope": "local",
+      "Driver": "bridge",
+      "EnableIPv6": false,
+      "IPAM": {
+      "Driver": "default",
+      "Options": null,
+      "Config": [
+         {
+            "Subnet": "172.17.0.0/16",
+            "Gateway": "172.17.0.1"
+         }
+      ]
+   },
+      "Internal": false,
+      "Attachable": false,
+      "Ingress": false,
+      "ConfigFrom": {
+      "Network": ""
+   },
+      "ConfigOnly": false,
+      "Containers": {
+      "1e9b894fcb4e895ecd5cbe6057a91878575ca9c3f42eca90972f1b27b4602d8b": {
+         "Name": "lucid_nightingale",
+         "EndpointID": "ffe18c18cdde74bca69f85497a3932edda7c5d3f3438e25be386c13510e62f16",
+         "MacAddress": "02:42:ac:11:00:02",
+         "IPv4Address": "172.17.0.2/16",
+         "IPv6Address": ""
+      }
+   },
+      "Options": {
+      "com.docker.network.bridge.default_bridge": "true",
+      "com.docker.network.bridge.enable_icc": "true",
+      "com.docker.network.bridge.enable_ip_masquerade": "true",
+      "com.docker.network.bridge.host_binding_ipv4": "0.0.0.0",
+      "com.docker.network.bridge.name": "docker0",
+      "com.docker.network.driver.mtu": "1500"
+   },
+      "Labels": {}
+   }
+]
+
+
+
+# you can create your own - creates a new virtual network with a driver of bridge (default driver)
+# default bridge DRIVER is a built-in (or optional 3rd party extension) that gives you virtual network features, such as subnet, etc.
+#     default doesn't have any of the advanced features such as overlay networks that allow private networking between hosts
+[me:~/data/courses]$ docker network create my_test_network
+8d5303842d31f24e3bc12aa3b5022603d85547a9ee85548a4c01f9a71b7cf840
+[me:~/data/courses]$ docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+dfc440a8cb5d        bridge              bridge              local
+406dbffe9820        host                host                local
+8d5303842d31        my_test_network     bridge              local
+1241cf65cdb7        none                null                local
+
+[me:~/data/courses]$ docker network create --help
+
+# can do the --network option when we create a container and assign it to our new network (or to host or none - bridge is default)
+# using "--network host" will gain performance by skipping virtual networks but sacrifices security of container model
+# using "--network none" removes the host nic ("enp0s3") and only leaves you with localhost interface in container
+[me:~/data/courses]$ docker container run -d --name new_nginx --network my_test_network nginx
+1ddb3034d5ade726a221dd5fa4f2a31615d53123ca22af23bbe9862df869140c
+[me:~/data/courses]$ docker network inspect my_test_network
+[
+    {
+        "Name": "my_test_network",
+        "Id": "8d5303842d31f24e3bc12aa3b5022603d85547a9ee85548a4c01f9a71b7cf840",
+        "Created": "2018-06-07T18:15:59.248781591-04:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "172.18.0.0/16",
+                    "Gateway": "172.18.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "1ddb3034d5ade726a221dd5fa4f2a31615d53123ca22af23bbe9862df869140c": {
+                "Name": "new_nginx",
+                "EndpointID": "6630cd38806a8057e9959647f66ad493b927d269bad4fb328cdccbe153713e0b",
+                "MacAddress": "02:42:ac:12:00:02",
+                "IPv4Address": "172.18.0.2/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {}
+    }
+]
+
+# to switch an existing container to a network use network connect
+# first showing the hashes for the networks and containers
+[me:~/data/courses]$ docker network ls
+NETWORK ID          NAME                DRIVER              SCOPE
+dfc440a8cb5d        bridge              bridge              local
+406dbffe9820        host                host                local
+8d5303842d31        my_test_network     bridge              local
+1241cf65cdb7        none                null                local
+[me:~/data/courses]$ docker container ls --no-trunc --format 'table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Command}}'
+CONTAINER ID                                                       IMAGE                   NAMES               COMMAND
+1ddb3034d5ade726a221dd5fa4f2a31615d53123ca22af23bbe9862df869140c   nginx                   new_nginx           "nginx -g 'daemon off;'"
+c94f8406af1ac0e2a478efb0638d0358c347bed33fe58a9f099eb1b0b59e85fb   landoop/fast-data-dev   eager_rosalind      "/usr/bin/dumb-init -- bash"
+ac28cc7a96f1a0ab4ecdd03318f2d95d957edf1d225ed6bb130ba1c705f0d744   landoop/fast-data-dev   gifted_jones        "/usr/bin/dumb-init -- bash"
+1e9b894fcb4e895ecd5cbe6057a91878575ca9c3f42eca90972f1b27b4602d8b   landoop/fast-data-dev   lucid_nightingale   "/usr/bin/dumb-init -- /usr/local/bin/setup-and-run.sh"
+# now connect the nginx container to the bridge network (network is specified first)
+[me:~/data/courses]$ docker network connect dfc440a8cb5d 1ddb3034d5ad
+[me:~/data/my-dir]$ docker network inspect bridge
+[
+    {
+        "Name": "bridge",
+        "Id": "dfc440a8cb5d3ec0986298ed5ec45e1476d0f85365b00d8113475d788f421355",
+        "Created": "2018-06-01T18:28:49.304733642-04:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.17.0.0/16",
+                    "Gateway": "172.17.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "1ddb3034d5ade726a221dd5fa4f2a31615d53123ca22af23bbe9862df869140c": {
+                "Name": "new_nginx",
+                "EndpointID": "73fde8bce61bc3b3909072c58f7112c5131cf43e1c72f84b24dfad041871518e",
+                "MacAddress": "02:42:ac:11:00:03",
+                "IPv4Address": "172.17.0.3/16",
+                "IPv6Address": ""
+            },
+            "1e9b894fcb4e895ecd5cbe6057a91878575ca9c3f42eca90972f1b27b4602d8b": {
+                "Name": "lucid_nightingale",
+                "EndpointID": "ffe18c18cdde74bca69f85497a3932edda7c5d3f3438e25be386c13510e62f16",
+                "MacAddress": "02:42:ac:11:00:02",
+                "IPv4Address": "172.17.0.2/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {
+            "com.docker.network.bridge.default_bridge": "true",
+            "com.docker.network.bridge.enable_icc": "true",
+            "com.docker.network.bridge.enable_ip_masquerade": "true",
+            "com.docker.network.bridge.host_binding_ipv4": "0.0.0.0",
+            "com.docker.network.bridge.name": "docker0",
+            "com.docker.network.driver.mtu": "1500"
+        },
+        "Labels": {}
+    }
+]
+# our container is also still connected to the other network
+[me:~/data/my-dir]$ docker network inspect my_test_network
+[
+    {
+        "Name": "my_test_network",
+        "Id": "8d5303842d31f24e3bc12aa3b5022603d85547a9ee85548a4c01f9a71b7cf840",
+        "Created": "2018-06-07T18:15:59.248781591-04:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": {},
+            "Config": [
+                {
+                    "Subnet": "172.18.0.0/16",
+                    "Gateway": "172.18.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "1ddb3034d5ade726a221dd5fa4f2a31615d53123ca22af23bbe9862df869140c": {
+                "Name": "new_nginx",
+                "EndpointID": "6630cd38806a8057e9959647f66ad493b927d269bad4fb328cdccbe153713e0b",
+                "MacAddress": "02:42:ac:12:00:02",
+                "IPv4Address": "172.18.0.2/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {},
+        "Labels": {}
+    }
+]
+# or inspecting the container and extracting the names shows both virtual networks
+[me:~/data/my-dir]$ docker container inspect --format '''{{ .NetworkSettings.Networks }}' new_nginx
+map[bridge:0xc42046c000 my_test_network:0xc42046c0c0]
+
+# create apps so frontend/backend sit on same docker network
+# their intercommunication never leaves host
+# all externally exposed ports are closed by default
+# you must manually expose via -p, which is better default security
+# this gets even better with Swarm and Overlay networks
+# with docker network create, you can specify driver with --driver (bridge is default)
+# static IP's and using IP's for talking to containers is an anti-pattern
+#		overcome this by using Docker DNS - docker has a built in DNS server that containers use by default
+# 		docker defaults the hostname to the container's name, but you can also set aliases
 
 
 
