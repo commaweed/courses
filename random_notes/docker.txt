@@ -391,7 +391,7 @@ ac28cc7a96f1a0ab4ecdd03318f2d95d957edf1d225ed6bb130ba1c705f0d744   landoop/fast-
     }
 ]
 # or inspecting the container and extracting the names shows both virtual networks
-[me:~/data/my-dir]$ docker container inspect --format '''{{ .NetworkSettings.Networks }}' new_nginx
+[me:~/data/my-dir]$ docker container inspect --format '{{ .NetworkSettings.Networks }}' new_nginx
 map[bridge:0xc42046c000 my_test_network:0xc42046c0c0]
 
 # create apps so frontend/backend sit on same docker network
@@ -405,4 +405,102 @@ map[bridge:0xc42046c000 my_test_network:0xc42046c0c0]
 # 		docker defaults the hostname to the container's name, but you can also set aliases
 
 
+# =======================================================================================
+# swarm
+# =======================================================================================
 
+# swarm mode is a clustering solution built inside docker (can bring together different OS or hosts)
+#		* it can be used to scale out or scale up
+# not related to swarm classic for pre-1.12 versions, which:
+#		was a container that ran inside of docker and took docker run commands and repeated them out to other servers
+# added in 1.12 (summer 2016) via swarmkit toolkit
+# enhanced in 1.13 (jan 2017) via stacks and secrets
+# not enabled by default, new commands once enabled
+#		docker swarm
+#		docker node
+#		docker service	
+#			* in a swarm, it replaces a docker run command and allows us to add extra features to container when we run it (e.g. replica) 
+#			* these are known as tasks 
+#			* a single service can have multiple tasks and each one of those tasks will launch a container
+#		docker stack
+#		docker secret
+# in the concept of swarm, we now have managers and workers - they all communicate over the control plane
+#		manager nodes = TLS / Certificate Authority 
+#			* a worker with permissions to control the swarm
+#			* they all have a database on them known as the raft db and it stores their config and gives them the info they need to have to be an authority
+#			* they encrypt their traffic in order to ensure integrity and guarantee their trust so that they can manage the swarm securely
+#			* they issue orders down to the workers
+#			* they can be demoted down to a worker (or a worker promoted up)
+#		worker = TLS
+#			* constantly report into the managers and ask for new work
+
+# to tell if swarn is running
+[me:~/data/my-dir]$ docker info | grep Swarm
+Swarm: inactive
+
+# to create a single node swarm
+[me:~/data/my-dir]$ docker swarm init
+Swarm initialized: current node (htt0wan0qnk3p41e7sx65waj8) is now a manager.
+To add a worker to this swarm, run the following command:
+    docker swarm join --token SWMTKN-1-647boq10sfbwj8ftlq0obhm58mo1akyw14ett44rb3hz8bktp7-2mcnrn25z0detq9xx6urr46pr 10.0.2.15:2377
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions.
+# what just happened?
+#		* lots of pki and security automation
+#			-- root signing cert created for our swarm
+#			-- cert issued for first manager node
+#			-- join tokens created
+#		* creates raft consensus database to store root CA, configs and secrets
+#			-- raft is a protocol that ensures consistency across multiple nodes (ideal in cloud where things go down)
+#			-- creates db on disk and encrypts it if on v1.13+
+#			-- waits for other manager nodes to be joined to it and then replicates it over to them securely (TLS) - logs too
+#			-- don't need an additional key/value system to hold orchestration/secrets (replicated)
+
+# with swarm running, to see the nodes in the swarm (docker node --help)
+[me:~/data/my-dir]$ docker node ls
+ID                            HOSTNAME                STATUS              AVAILABILITY        MANAGER STATUS      ENGINE VERSION
+htt0wan0qnk3p41e7sx65waj8 *   localhost.localdomain   Ready               Active              Leader              18.05.0-ce
+
+# docker service in a swarm replaces a docker run
+[me:~/data/my-dir]$ docker service --help
+
+# example of giving a simple order (returns the service ID)
+[me:~/data/my-dir]$ docker service create alpine ping 8.8.8.8
+8iqljmpj3tokkjlghhn0c2gpq
+overall progress: 1 out of 1 tasks 
+1/1: running   [==================================================>] 
+verify: Service converged 
+
+# to see the running services 
+[me:~/data/my-dir]$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+8iqljmpj3tok        festive_yalow       replicated          1/1                 alpine:latest  
+# to see list of tasks or containers for a service
+[me:~/data/my-dir]$ docker service ps festive_yalow
+ID                  NAME                IMAGE               NODE                    DESIRED STATE       CURRENT STATE           
+4wtep8s8qmz8        festive_yalow.1     alpine:latest       localhost.localdomain   Running             Running 3 minutes ago  
+# docker container still works and shows our new task
+[me:~/data/my-dir]$ docker container ls --format 'table {{.ID}}\t{{.Image}}\t{{.Names}}'
+CONTAINER ID        IMAGE                   NAMES
+87c5113bdbf3        alpine:latest           festive_yalow.1.4wtep8s8qmz8414t0yf4kirnm
+1ddb3034d5ad        nginx                   new_nginx
+c94f8406af1a        landoop/fast-data-dev   eager_rosalind
+ac28cc7a96f1        landoop/fast-data-dev   gifted_jones
+1e9b894fcb4e        landoop/fast-data-dev   lucid_nightingale
+
+# to scale up a service
+[me:~/data/my-dir]$ docker service update 8iqljmpj3tok --replicas 3
+8iqljmpj3tok
+overall progress: 3 out of 3 tasks 
+1/3: running   [==================================================>] 
+2/3: running   [==================================================>] 
+3/3: running   [==================================================>] 
+verify: Service converged 
+[me:~/data/my-dir]$ docker service ls
+ID                  NAME                MODE                REPLICAS            IMAGE               PORTS
+8iqljmpj3tok        festive_yalow       replicated          3/3                 alpine:latest       
+[me:~/data/my-dir]$ docker service ps
+[me:~/data/my-dir]$ docker service ps festive_yalow
+ID                  NAME                IMAGE               NODE                    DESIRED STATE       CURRENT STATE                ERROR               PORTS
+4wtep8s8qmz8        festive_yalow.1     alpine:latest       localhost.localdomain   Running             Running 14 minutes ago                           
+pndbgnhz1bpt        festive_yalow.2     alpine:latest       localhost.localdomain   Running             Running about a minute ago                       
+wj8eq2qlajsj        festive_yalow.3     alpine:latest       localhost.localdomain   Running             Running about a minute ago
