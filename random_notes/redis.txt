@@ -14,7 +14,22 @@ help @<tab>
 <tab>
 help set
 help get
-set TEST_KEY "test value"
-get TEST_KEY
-
-
+set TEST_KEY "test value"	# set key/value pair
+get TEST_KEY					# get value for key 
+keys *							# show all keys
+del TEST_KEY					# delete key
+flushall							# clear the cache
+clear								# clear the terminal (just gives some space between last command)
+setex key 20 value			# set a key/value and have it expire in 20 seconds (for example), if key exists, it overrides
+ttl key							# tells you time to live in seconds before the key will be removed
+setnx key value				# if key does not exist, it will set it, otherwise it ignores (not overridden)
+strlen key						# gives length of value
+mset key1 value1 key2 ...	# set multiple values at one time
+append key " blah"			# append to a value
+info								# show information about cpu's, memory, etc.
+hmset stu-1 name max age 15 class 8	# hash key-field-value (multiple)
+hget key field
+hgetall key
+hexists key field				# indicates whether or not the field exists (returns integer 0 or 1)
+hdel key	field					# delete field from hash key
+hsetnx key field			   # sets key field if it doesn't exist
