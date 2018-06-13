@@ -33,3 +33,4 @@ hgetall key
 hexists key field				# indicates whether or not the field exists (returns integer 0 or 1)
 hdel key	field					# delete field from hash key
 hsetnx key field			   # sets key field if it doesn't exist
+config get *					# show all the current config values
