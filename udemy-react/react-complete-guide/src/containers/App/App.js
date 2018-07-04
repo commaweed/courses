@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import Persons from '../../components/Persons/Persons';
+// import Persons from '../../components/Persons/Persons';
 import StatefulPersons from '../../components/StatefulPersons/StatefulPersons';
 import Cockpit from '../../components/Cockpit/Cockpit';
 import appClasses from './App.css';

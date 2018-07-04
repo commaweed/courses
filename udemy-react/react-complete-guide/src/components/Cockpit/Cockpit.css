@@ -2,29 +2,29 @@
     color: red;
   }
   
-  .Bold {
-    font-weight: bold;
-  }
-  
-  /* for every button nested in .App */
-  .Cockpit button {
-    border: 1px solid blue;
-    padding: 16px;
-    background-color: green;
-    font: inherit;
-    color: white;
-  }
-  
-  .Cockpit button:hover {
-    background-color: lightgreen;
-    color: black;
-  }
-  
-  .Cockpit button.Red {
-    background-color: red;
-  }
-  
-  .Cockpit button.Red:hover {
-    background-color: salmon;
-    color: black;
-  }
+.Bold {
+  font-weight: bold;
+}
+
+/* for every button nested in .App */
+.Button {
+  border: 1px solid blue;
+  padding: 16px;
+  background-color: green;
+  font: inherit;
+  color: white;
+}
+
+.Button:hover {
+  background-color: lightgreen;
+  color: black;
+}
+
+.Button.Red {
+  background-color: red;
+}
+
+.Button.Red:hover {
+  background-color: salmon;
+  color: black;
+}
