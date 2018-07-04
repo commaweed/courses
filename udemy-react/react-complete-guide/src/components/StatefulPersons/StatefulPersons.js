@@ -60,8 +60,9 @@ class StatefulPersons extends PureComponent {
                     // do this when using withClassForwardedRef (16.3 way)
                     ref={ this.lastPersonRef }
 
-        
                     changed={ (event) => this.props.changed(event, person.id) }
+
+                    authenticated={ this.props.isAuthenticated }
                 />   
         );
 

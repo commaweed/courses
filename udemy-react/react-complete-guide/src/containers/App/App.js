@@ -6,6 +6,11 @@ import appClasses from './App.css';
 import Aux from '../../hoc/Aux';
 import withClassAsWrapper from '../../hoc/withClassAsWrapper';
 
+// 16.3 global context example (works with providers and consumers); creates a jsx component
+// initial value of false (it can change); it will be provided to all children that it wraps
+// export it so it can be imported in a child component that wants to use it
+export const AuthContext = React.createContext(false);
+
 class App extends Component {
 
   // constructor is not required
@@ -22,12 +27,38 @@ class App extends Component {
       ],
       otherState: 'some other value',
       showPersons: false,
-      toggleClicked: 0
+      toggleClicked: 0,
+      authenticated: false,
+      globalAuth: false // keeping original to demonstrate both
     }
   }
 
+  // 16.3 AVOID THIS ONE (because they can be used incorrectly) - use the new methods instead
   componentWillMount() {
     console.log('[App.js] componentWillMount');
+  }
+
+  // 16.3 AVOID THIS ONE (because they can be used incorrectly) - use the new methods instead
+  componentWillUpdate(nextProps, nextState) {
+      console.log('[App.js] internal update componentWillUpdate', nextProps, nextState); 
+  }
+
+    // 16.3 AVOID THIS ONE (because they can be used incorrectly) - use the new methods instead
+  // componentWillReceiveProps() {}
+
+  // 16.3 - executed whenever your props are updated - called before rendering / mounting
+  // state should rarely be coupled to your props
+  static getDerivedStateFromProps(nextProps, prevState) {
+    console.log('[App.js] getDerivedStateFromProps', nextProps, prevState);
+
+    return prevState; // typically return a new state by using the props
+  }
+
+  // 16.3 - executed right before the DOM does update
+  // great place to save the current scrolling position of the component (and set it in componentDidUpdate())
+  getSnapshotBeforeUpdate() {
+    console.log('[App.js] getSnapshotBeforeUpdate');
+    return null;
   }
 
   componentDidMount() {
@@ -38,10 +69,6 @@ class App extends Component {
     console.log('[App.js] internal update shouldComponentUpdate', nextProps, nextState); 
     return nextState.persons !== this.state.persons || nextState.showPersons !== this.state.showPersons;
     // return true; 
-  }
-
-  componentWillUpdate(nextProps, nextState) {
-      console.log('[App.js] internal update componentWillUpdate', nextProps, nextState); 
   }
 
   componentDidUpdate() {
@@ -85,18 +112,23 @@ class App extends Component {
     this.setState({persons: persons});
   }
 
+  loginHandler = () => {
+    this.setState({ authenticated: true, globalAuth: true });
+  }
+
   render() {
     console.log('[App.js] Inside render');
 
     let persons = null;
     if (this.state.showPersons) {
-        persons = (    
-          <StatefulPersons 
-            persons={ this.state.persons } 
-            clicked={ this.deletePersonHandler } 
-            changed={ this.nameChangeHandler } 
-          />
-        );
+      persons = (    
+        <StatefulPersons 
+          persons={ this.state.persons } 
+          clicked={ this.deletePersonHandler } 
+          changed={ this.nameChangeHandler } 
+          isAuthenticated={ this.state.authenticated }
+        />
+      );
     }
 
     return (
@@ -106,8 +138,11 @@ class App extends Component {
             showPersons={ this.state.showPersons }
             persons={ this.state.persons }
             clicked={ this.togglePersonsHandler }
+            login={ this.loginHandler }
           />
-          { persons }
+          <AuthContext.Provider value={ this.state.globalAuth }>
+            { persons }
+          </AuthContext.Provider>
       </Aux>
     );
   }
