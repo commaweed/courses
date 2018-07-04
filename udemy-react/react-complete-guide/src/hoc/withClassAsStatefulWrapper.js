@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
 // can be used to maintain state, or reach out to server, etc.
-const withClassAsWrapper = (WrappedComponent, className) => {
+const withClassAsStatefulWrapper = (WrappedComponent, className) => {
     // return an anonymous class (class factory)
     return class extends Component {
        render() {
@@ -14,4 +14,4 @@ const withClassAsWrapper = (WrappedComponent, className) => {
     } 
 }
 
-export default withClassAsWrapper;
+export default withClassAsStatefulWrapper;
