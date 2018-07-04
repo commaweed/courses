@@ -21,7 +21,8 @@ class App extends Component {
         { id: 3, name: 'Test', age: 50 }
       ],
       otherState: 'some other value',
-      showPersons: false
+      showPersons: false,
+      toggleClicked: 0
     }
   }
 
@@ -47,25 +48,6 @@ class App extends Component {
       console.log('[App.js] internal update componentDidUpdate'); 
   }  
 
-  // the following state initialization only works in modern projects
-  // state = {
-  //   persons: [
-  //     { id: 1, name: 'Max', age: 28 },
-  //     { id: 2, name: 'Manu', age: 28 },
-  //     { id: 3, name: 'Test', age: 50 }
-  //   ],
-  //   otherState: 'some other value',
-  //   showPersons: false
-  // }
-
-  // switchNameHandler = (newName) => {
-  //   this.setState({persons:[
-  //     { name: newName, age: 28},
-  //     { name: 'Manu', age: 28},
-  //     { name: 'Test', age: 33}
-  //   ]});
-  // }
-
   nameChangeHandler = ( event, id) => {
     const personIndex = this.state.persons.findIndex(person => person.id === id);
     // const person = this.state.persons[personIndex];
@@ -87,7 +69,14 @@ class App extends Component {
 
   togglePersonsHandler = () => {
     const doesShow = this.state.showPersons;
-    this.setState({showPersons: !doesShow });
+
+    // setState is an ansynchronous call, so we need to update toggleClicked in this fashion
+    this.setState( (prevState, props) => {
+      return {
+        showPersons: !doesShow,
+        toggleClicked: prevState.toggleClicked + 1
+      }
+    });
   }
 
   deletePersonHandler = (personIndex) => {

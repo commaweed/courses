@@ -7,6 +7,7 @@ class StatefulPersons extends PureComponent {
     constructor(props) {
         super(props); 
         console.log('[StatefulPersons.js] constructor', props);
+        this.lastPersonRef = React.createRef();
     }
 
     componentWillMount() {
@@ -15,6 +16,7 @@ class StatefulPersons extends PureComponent {
 
     componentDidMount() {
         console.log('[StatefulPersons.js] componentDidMount');
+        this.lastPersonRef.current.focus();
     }
 
     componentWillReceiveProps(nextProps) {
@@ -47,6 +49,11 @@ class StatefulPersons extends PureComponent {
         
                     // assign a key property so react will only render the element that changes and not the entire list
                     key={ person.id }
+
+                    position={index}
+
+                    // use this if you have an hoc between your underlying ref
+                    forwardedRef={ this.lastPersonRef }
         
                     changed={ (event) => this.props.changed(event, person.id) }
                 />   
