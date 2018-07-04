@@ -1,6 +1,7 @@
 import  React, { Component } from 'react';
 import personClasses from './StatefulPerson.css';
 import withClassAsStatefulWrapper from '../../../hoc/withClassAsStatefulWrapper';
+import withClassForwardedRef from '../../../hoc/withClassForwardedRef';
 import Aux from '../../../hoc/Aux';
 import PropTypes from 'prop-types'
 
@@ -57,4 +58,4 @@ StatefulPerson.propTypes = {
     changed: PropTypes.func
 }
 
-export default withClassAsStatefulWrapper(StatefulPerson, personClasses.Person);
+export default withClassForwardedRef(StatefulPerson, personClasses.Person);

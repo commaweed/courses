@@ -16,7 +16,8 @@ class StatefulPersons extends PureComponent {
 
     componentDidMount() {
         console.log('[StatefulPersons.js] componentDidMount');
-        this.lastPersonRef.current.focus();
+
+        if (this.lastPersonRef.current) this.lastPersonRef.current.focus();
     }
 
     componentWillReceiveProps(nextProps) {
@@ -53,7 +54,12 @@ class StatefulPersons extends PureComponent {
                     position={index}
 
                     // use this if you have an hoc between your underlying ref
-                    forwardedRef={ this.lastPersonRef }
+                    // do this when using withClassAsStatefulWrapper in StatefulPerson.js
+                    // forwardedRef={ this.lastPersonRef }
+
+                    // do this when using withClassForwardedRef (16.3 way)
+                    ref={ this.lastPersonRef }
+
         
                     changed={ (event) => this.props.changed(event, person.id) }
                 />   
