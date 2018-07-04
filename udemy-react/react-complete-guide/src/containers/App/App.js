@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import StatefulPersons from '../../components/StatefulPersons/StatefulPersons';
 import Cockpit from '../../components/Cockpit/Cockpit';
 import appClasses from './App.css';
+import WithClass from '../../hoc/WithClass';
 
 class App extends Component {
 
@@ -109,15 +110,15 @@ class App extends Component {
     }
 
     return (
-      <div className={appClasses.App}>     
-        <button onClick={ () => this.setState({showPersons: true}) }>Show Persons</button> 
-        <Cockpit 
-          showPersons={ this.state.showPersons }
-          persons={ this.state.persons }
-          clicked={ this.togglePersonsHandler }
-        />
-        { persons }
-      </div>
+      <WithClass classes={ appClasses.App }>   
+          <button onClick={ () => this.setState({showPersons: true}) }>Show Persons</button> 
+          <Cockpit 
+            showPersons={ this.state.showPersons }
+            persons={ this.state.persons }
+            clicked={ this.togglePersonsHandler }
+          />
+          { persons }
+      </WithClass>
     );
   }
 }
