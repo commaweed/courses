@@ -2,10 +2,10 @@
 
 ## css
 
-### CSS reference
-
-[MDN - CSS reference](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference) 
-[CSS Reference](http://tympanus.net/codrops/css_reference/) 
+| CSS reference |
+|:---- |
+| [MDN - CSS reference](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference) |  
+| [CSS Reference](http://tympanus.net/codrops/css_reference/) |
 
 ### CSS animation
 
@@ -204,3 +204,4 @@
 [ISO Republic](https://isorepublic.com/)
 [Pixabay](https://pixabay.com/)
 [iStock](https://www.istockphoto.com/)
+
