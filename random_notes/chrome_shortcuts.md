@@ -32,7 +32,7 @@
 
 ### element selectors
 
-Selector 	Description 	Example
+| Selector | Description | Example |
 | ---- | ---- | ---- |
 | $_ | Returns the value of the most recently evaluated expression. | > 2+2 -> 4 > _$ -> 4 |
 | $0 - $4 | Dev Tools remembers the last five DOM elements (or JavaScript heap objects) that you’ve selected in the tab. | select then do copy($0) -> copy html contents to clipboard |
@@ -44,7 +44,7 @@ Selector 	Description 	Example
 
 ### different ways to use console
 
-console function 	Description
+| console function | Description |
 | ---- | ---- |
 | console.timeStamp(‘please be super fast, k’); | adds a timestamp to output - similar to log4j |
 | console.groupCollapsed(‘x’), console.groupEnd(‘x’) | group console logs |
@@ -60,7 +60,7 @@ console function 	Description
 
 ### javascript functions
 
-Selector 	Description 	Example
+| Selector | Description | Example |
 | ---- | ---- | ---- |
 | clear() | clears the console 	 | | 
 | copy(object) | Copies a string representation of the specified object to the clipboard. | select then copy($0) |
@@ -79,7 +79,7 @@ Selector 	Description 	Example
 
 ### javascript events
 
-Event type 	Corresponding mapped events
+| Event type | Corresponding mapped events |
 | ---- | ---- |
 | mouse | “click”, “dblclick”, “mousedown”, “mouseeenter”, “mouseleave”, “mousemove”, “mouseout”, “mouseover”, “mouseup”, “mouseleave”, “mousewheel” |
 | key | “keydown”, “keyup”, “keypress”, “textInput” |
