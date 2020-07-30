@@ -105,7 +105,7 @@ Sample of MATE Desktop Enviroment
     # change the mode
     xrandr --output VGA-0 --mode 2560x1440 --rate 60
     
-    # make it permanent
+    # make it permanent (don't do this)
     sudo grubby --update-kernel=ALL --args="video=hyperv_fb:2560x1440"
 11. Set up the shared folder
     a.    In virtual box, choose settings -> shared folders -> machine folders
