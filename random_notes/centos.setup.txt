@@ -91,9 +91,19 @@ Sample of MATE Desktop Enviroment
        
 10. to add 1920 x 1200
     as root
-    cvt 1920 1200
-    xrandr to find monitor name (i.e. VGA-0)
-    xrandr --output VGA-0 --mode 1920x1200
+    cvt 2560 1440
+    
+    # find monitor name (look for the name with all the modelines)
+    xrandr
+    
+    # add the new mode (this may not add it to your screen)
+    xrandr --newmode "2560x1440_60.00"  312.25  2560 2752 3024 3488  1440 1443 1448 1493 -hsync +vsyn
+    
+    # add the new modeline to your screen
+    xrandr --addmode VGA-0 "2560x1440_60.00
+    
+    # change the mode
+    xrandr --output VGA-0 --mode 2560x1440
 11. Set up the shared folder
     a.    In virtual box, choose settings -> shared folders -> machine folders
         Folder Path: R:\virtual_box_shared_folder
