@@ -89,7 +89,7 @@ Sample of MATE Desktop Enviroment
         3rd ALL:    can run commands as all groups
         4th ALL:    applies to all commands
        
-10. to add 1920 x 1200
+10. to add 2560 x 1440
     as root
     cvt 2560 1440
     
@@ -97,13 +97,13 @@ Sample of MATE Desktop Enviroment
     xrandr
     
     # add the new mode (this may not add it to your screen)
-    xrandr --newmode "2560x1440_60.00"  312.25  2560 2752 3024 3488  1440 1443 1448 1493 -hsync +vsyn
+    xrandr --newmode 2560x1440  312.25  2560 2752 3024 3488  1440 1443 1448 1493 -hsync +vsyn
     
     # add the new modeline to your screen
-    xrandr --addmode VGA-0 "2560x1440_60.00
+    xrandr --addmode VGA-0 2560x1440
     
     # change the mode
-    xrandr --output VGA-0 --mode 2560x1440
+    xrandr --output VGA-0 --mode 2560x1440 --rate 60
 11. Set up the shared folder
     a.    In virtual box, choose settings -> shared folders -> machine folders
         Folder Path: R:\virtual_box_shared_folder
@@ -532,7 +532,7 @@ b.  to add 1920 x 1200 resolution (not this was my top resolution, you'll have t
         a.  First, outside the VM in your windows OS, check your screen resolution settings so you know what values to pass cvt (e.g. 1920x1200 @ 60 hz)
         b.    2nd, we run cvt to get the Modeline for the resolution we want (alternate command is gtf):
 
-
+l
             $ cvt 1920 1200
 
             For me it returned the following line:
