@@ -97,6 +97,7 @@ for type in pi cd bd so; do LS_COLORS="$LS_COLORS:*.$ext=00;46;37"; done
 alias grep='grep --color'
 alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
+alias rgrep='find . -name "*" -print | xargs grep \!*'
 alias latr='ls -latr'
 alias l='ls -a'
 alias bashit='vim ~/.bashrc'
@@ -107,8 +108,6 @@ alias showsize='du -h -d 1 -c | sort -h'
 alias f='find . -name "\!*" -print'
 alias files="find . -type f -print | grep -v '~'"
 alias psg="ps -ef | grep \!* | more"
-alias ping='/usr/sbin/ping -s'
-alias rgrep='find . -name "*" pprint | xargs grep \!*'
 
 # git
 
