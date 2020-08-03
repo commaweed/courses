@@ -104,6 +104,11 @@ alias addrsa='ssh-add /home/tjjenk2/.ssh/id_rsa'
 alias cls='clear &&echo -en "\e[3J"'
 alias goroot='sudo su -s - root'
 alias showsize='du -h -d 1 -c | sort -h'
+alias f='find . -name "\!*" -print'
+alias files="find . -type f -print | grep -v '~'"
+alias psg="ps -ef | grep \!* | more"
+alias ping='/usr/sbin/ping -s'
+alias rgrep='find . -name "*" pprint | xargs grep \!*'
 
 # git
 
