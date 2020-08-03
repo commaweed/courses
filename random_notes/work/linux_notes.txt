@@ -43,6 +43,16 @@ du -sh /dir/path
 sudo du -cksh *
 df -h
 
+# some awk examples
+cat file.csv | gawk -vFPAT='[^,]*|"[^"]*"' '{print "%20s|%7s|%7s\n", $2, $3, $4}' | awk 'length($2)>0' | head -n 100
+cat file.csv | gawk -vFPAT='[^,]*|"[^"]*"' '{print $60}' | sort | uniq -c
+cat file.csv |  gawk -vFPAT='[^,]*|"[^"]*"' '{print "%20s|%7s|%7s\n", $2, $3, $4}' | awk -F "|" '$4=="  LAC" || $4=="     "' | head -n 10 
+cat file.csv | tail -n +2 | awk -F "," '{print $3,$4,$9,$5}' | awk {print length, $0}' | sort -n -s | cut -d" " -f2- | awk 'NF>3' | sort | uniq -u | awk -F " " 'length($1)==5 && length($2)==5' | wc -l
+INGEST_PID=`(jsp | grep -i "${INGEST_MAIN_CLASS}" | awk '{print $1}')`
+awk -F '[\[]+|[\]]' '{print $2}' file.txt | sort | uniq -c
+cat file.csv | tail -n +2 | awk -F "," '{print $3,$4,$9,$5}' | awk 'NF==4' | awk '{printf "%05i.$05i.%03i..%05i\n", $1,$2,$4,$3}' | sort -s | uniq -u
+cat file.csv | tail -n +2 | awk -F "," '{print $3,$4,$9,$5}' | awk 'NF==4' | awk 'length($3)!=5' | wc -l
+
 # ========================================
 # memory / host
 # ========================================
