@@ -100,16 +100,56 @@ sudo systemctl edit application.service # snippet
 sudo systemctl edit --full application.service
 
 # ========================================
-# yum / rpm
+# rpm  
 # ========================================
 
-# list installed software
+# query an rpm
+rpm -q {package}
+rpm -qpi blah.rpm # display package info
+rpm -qi blah
+rpm -qpl blah.rpm # all files, to include configuration and documentation
+rpm -ql blah
+rpm -qpc blah.rpm # configuration files
+rpm -qc blah
+rpm -qpd blah.rpm # documentation files
+rpm -qd blah 
+rpm -qp --changelog blah.rpm # to see changes and bug fixes
+rpm -qpR blah.rpm # dependencies
+prm -qR blah
+
+# cheat sheet
+# -i install
+# -U update
+# -e erase (remove)
+# -h print hash marks as the package archive is unpacked (progress meters of sorts)
+# -v verbose display
+# -V verify 
+# --nodeps no dependencies
+rpm -ivh blah.rpm 
+rpm -ivh --nodeps blah.rpm 
+rpm -Uvh blah.rpm
+rpm -ev blah
+rpm -ev --nodeps blah
+rpm -Vp blah.rpm
+rpm -Va
+
+# build rpm
+rpmbuild --bb spec.file
+
+# extract to local directory
+rpm2cpio name | cpio -idmv
+
+# list all installed software
 rpm -qa | less
 sudo yum list
 
 # see which rpm a command is in so it can be installed
 rpm -qa | grep locate
 sudo yum install mlocate; sudo updatedb
+
+# ========================================
+# yum 
+# ========================================
 
 # yum repo
 /etc/yum.repos.d
