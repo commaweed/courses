@@ -119,6 +119,34 @@ sudo yum install mlocate; sudo updatedb
 :%s/search_string/replace_string/g
 :%s/\n\n/\r/g
 
+# replace current line only 
+:s/foo/bar/gci
+
+# change each foo to bar for all lines 5-12 (inclusive)
+:5,12s/foo/bar/g
+
+# change each foo to bar for current line to end (inclusive)
+:.,$/foo/bar/g
+
+# turn off line numbers
+:set number
+:set nonumber 
+
+# wrap
+:set wrap
+:set nowrap
+
+# paste
+:set paste
+:set nopaste
+
+# clear search highlight
+:noh
+:let @/=""
+
+# set text width
+:set textwidth=120
+
 # ========================================
 # other
 # ========================================
