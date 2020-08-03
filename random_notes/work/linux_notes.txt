@@ -111,6 +111,58 @@ sudo yum list
 rpm -qa | grep locate
 sudo yum install mlocate; sudo updatedb
 
+# yum repo
+/etc/yum.repos.d
+
+# display information about a package or repo
+yum info {package}              
+yum repolist
+yum reppkgs "reponame" {cmd}
+yum makecache
+yum check
+yum history
+show-installed
+verifytree
+yumdownloader
+yum-complete-transaction
+repotrack
+repoquery
+repoclosure
+needs-restarting
+find-repos-of-install
+
+# list packages or search a pacakge
+yum list available
+yum list installed
+yum list all
+yum list kernel
+yum deplist {package}
+yum grouplist
+yum groupinfo "group name"
+yum search {term}
+yum provides "*dir/file"
+
+# clean or update a package (or yum)
+yum updateinfo
+yum check-update
+yum update
+yum update {package}
+yum update-to {version}
+yum clean all
+yum clean packages
+
+# install a package or a group of packages
+yum install {package}
+yum localinstall {package}
+yum groupinstall "group name"
+yum reinstall {package}
+yum swap {pack1} {pack2}
+yum remove {package}
+yum erase {package}
+yum auto remove {package}
+yum downgrade {package}
+yum upgrade {package}
+
 # ========================================
 # vim
 # ========================================
