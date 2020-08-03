@@ -1,0 +1,127 @@
+# ========================================
+# account
+# ========================================
+
+# change home directory for user (it's in /etc/passwd)
+usermod -m -d /path/to/new/directory userNameHere
+
+# centos password restriction file
+/etc/pam.d/system-auth-ac
+
+# ========================================
+# search / find / file
+# ========================================
+
+# recursively remove .svn
+find . -name .svn -exec rm -rf '{}' \;
+
+# recursive find
+find . | xargs grep "google"
+
+# delete file over 7 days old
+find -mtime +7 -delete
+
+# find all files with an extension
+du -a . | awk '{print $2}' | grep '\.rpm$'
+find . -type f -name "*.rpm"
+find . -type f -name \*.rpm
+
+# ignore directory while finding a file
+find . -type d -name "dir_to_ignore" -prune -o -type f -name "search_text" -print
+find . -type f -name "search_text" ! -path '*/dir_to_ignore'
+find . -path ./dir_to_ignore -prune -o -type -f -name "search_text" -print
+find . -name "*.js" -not -path "./ignore/dir"
+
+# redirect stderr to stdout 
+find . -name file_name* 2>&1 | grep -v Permission
+
+# other find examples
+find . -type f -exec grep --include="*.java" "new JedisPool(" {} +
+
+# size of directories or file systems
+du -sh /dir/path
+sudo du -cksh *
+df -h
+
+# ========================================
+# memory / host
+# ========================================
+
+# out of memory commands
+egrep "High|low' /proc/meminfo
+vmstat -SM 45 10
+
+# view memory
+free -m
+cat /proc/meminfo
+vmstat -s
+top
+htop
+smem # --help
+
+# view centos version
+hostnamectl
+rpm --query centos-release
+cat /etc/centos-release
+
+# ========================================
+# service
+# ========================================
+
+# identifying services that start at each runlevel
+/sbin/chkconfig --list
+
+# centos 7 services (systemctl)
+# =============================
+
+# service directory
+/etc/systemd/system # e.g. /etc/systemd/multi-user.target.wants/rndg.service -> /user/lib/systemd/system/rngc.service
+
+# systemd service 
+sudo systemctl start application.service # start
+sudo systemctl start application # start alternative: it knows to search for .service files
+sudo systemctl restart application.service 
+sudo systemctl reload application.service
+sudo systemctl reload-or-restart application.service
+sudo systemctl enable application.service # systemd looks for autostart files in /etc/systemd/system/some_target.target.wants
+sudo systemctl disable application.service # removes the symbolic link
+systemctl status application.service
+systemctl is-active application-service
+systemctl is-enabled application.service
+systemctl is-failed application.service
+systemctl list-units
+systemctl list-units --all --state=inactive # not running
+systemctl list-units --all --state=active # running
+systemctl list-units --all --state=service
+systemctl cat sshd.service # display a unit file (in this case the ssh deamon)
+systemctl list-dependencies sshd.service
+systemctl show sshd.service
+sudo systemctl edit application.service # snippet
+sudo systemctl edit --full application.service
+
+# ========================================
+# yum / rpm
+# ========================================
+
+# list installed software
+rpm -qa | less
+sudo yum list
+
+# see which rpm a command is in so it can be installed
+rpm -qa | grep locate
+sudo yum install mlocate; sudo updatedb
+
+# ========================================
+# vim
+# ========================================
+
+# global replace
+:%s/search_string/replace_string/g
+:%s/\n\n/\r/g
+
+# ========================================
+# other
+# ========================================
+
+# fonts
+fc-cache -f -v
