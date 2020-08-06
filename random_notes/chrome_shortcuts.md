@@ -46,17 +46,23 @@
 
 | console function | Description |
 | ---- | ---- |
-| console.timeStamp(‘please be super fast, k’); | adds a timestamp to output - similar to log4j |
-| console.groupCollapsed(‘x’), console.groupEnd(‘x’) | group console logs |
-| console.log(‘one’, variable, ‘two’, variable2); | use , instead of + |
-| console.time(‘myTime’) and console.timeEnd(‘myTime’) | start a timer |
-| console.table(myArray) | Makes a pretty table |
-| console.count() | to determine how many times something has been called |
-| console.trace() | gives call stack |
+| console.assert(expression, object) | if expression = false, message/stacktrace is written to console (message = object) |
+| console.count(label) | to determine how many times something has been called |
+| console.clear() | clears the console history (ctrl-l) |
+| console.debug(object[, object, ...]) | same as console.log() |
 | console.dir() | Displays an object-style listing of all the properties of the specified object. |
 | console.dirxml(object) | Prints an XML representation of the specified object, as seen in the Elements tab. |
+| console.group(object[, object, ...]) | Starts a new logging group with optional title; end with console.groupEnd() |
+| console.groupCollapsed(‘x’) | starts a new logging group initially collapsed; end with , console.groupEnd(‘x’) |
+| console.log(‘one’, variable, ‘two’, variable2); | use , instead of + |
+| console.profile([label]); | starts JS CPU profile with optional label; console.profileEnd() to end it |
+| console.table(object or array) | Makes a pretty table |
+| console.time([label]) | start a timer with associated optional label; end with console.timeEnd([label]) |
+| console.timeStamp(‘please be super fast, k’); | adds a timestamp to output - similar to log4j |
+| console.trace() | prints a stacktrace from the point where this function was called |
 | dir($(‘#id’)) | alias for console.dir() |
 | dirxml($(‘#id’)) | alias for console.dirxml() |
+| debugger | the global debugger function placed within your code causes Chrome to stop progrm exectuion and start a debugging session |
 
 ### javascript functions
 
@@ -67,6 +73,7 @@
 | debug(function) | when the function specified is called, breaks inside the function | undebug(function) to turn off |
 | inspect(object/function) | Opens and selects the specified element or object in the appropriate panel | inspect(document.body.firstChild); |
 | getEventListeners(object) | Returns the event listeners registered on the specified object. | getEventListeners(document); |
+| JSON.stringify(object) | Turns the object ingo JSON (if it can). | | 
 | keys(object) | Returns an array containing the names of the properties belonging to the specified object. 	 | | 
 | values(object) | Returns an array containing the values belonging to the specified object. 	 | | 
 | monitor(function) | When function is called, a message is logged to the console with function name and arguments | function sum(x, y) {return x + y;} monitor(sum); |
@@ -77,11 +84,33 @@
 | table(data[, columns]) | Log object data with table by passing in a data object in with optional column headings. | complete with profileEnd() |
 | document.body.contentEditable=true | allows you to edit the html directly (like using word) | | 
 
-### javascript events
+### javascript / DOM events
 
 | Event type | Corresponding mapped events |
 | ---- | ---- |
-| mouse | “click”, “dblclick”, “mousedown”, “mouseeenter”, “mouseleave”, “mousemove”, “mouseout”, “mouseover”, “mouseup”, “mouseleave”, “mousewheel” |
-| key | “keydown”, “keyup”, “keypress”, “textInput” |
-| touch | “touchstart”, “touchmove”, “touchend”, “touchcancel” |
 | control | “resize”, “scroll”, “zoom”, “focus”, “blur”, “select”, “change”, “submit”, “reset” |
+| css | “animationend”, “animationiteration”, “animationstart”, “pagehide”, "pageshow", "resize", "scroll", "transitioncancel", "transitionend", "transitionstart" |
+| focus | “blur”, “focus”, “focusin”, “focusout” |
+| form | “change”, “input”, “invalid”, “reset”, “select”, “submit”, “compositionend”, “compositionstart”, “compositionupdate" |
+| key | “keydown”, “keyup”, “keypress”, “textInput” |
+| load | “abort”, “beforeunload”, “DOMContentLoad”, “error”, “load”, “readystatechange”, “unload” |
+| mouse | “click”, “dblclick”, “mousedown”, “mouseeenter”, “mouseleave”, “mousemove”, “mouseout”, “mouseover”, “mouseup”, “mouseleave”, “mousewheel” |
+| touch | “touchstart”, “touchmove”, “touchend”, “touchcancel” |
+
+### notes
+* if the network tab is slow in Chrome, you can disable hardware acceleration using the following steps
+1.  click the settings icon in the top-right of the browser window (hamburger symbol)
+2.  choose settings
+3.  click "show advanced settings..." at the bottom
+4.  scroll to nearly the end and there is a check box called "Use hardware acceleration when available", and make sure it is NOT checked.
+5.  restart the browser
+
+### angular notes
+var handleToYourService = angular.element("#someId").injector().get('YourService');
+var scopeOfMstRecentSelectedItem = angular.element($0).scope();
+var handleToYourController = angular.element($0).controller(); controller.constructor.name;
+var myScope = angular.element('[ng-controller=theControllerName]').scope();
+$($0).scope.someScopeValue = blah; $($0).scope().$digst(); // used to re-evaluate a scope variable 
+
+// if you want to remove angular scope circular reference stuff, you can omit the angular variables
+var newScope = _.omit(scopeOfMostRecentSelectedItem, function(value, key, object) { return key.startsWith("$") || key === "this" });
