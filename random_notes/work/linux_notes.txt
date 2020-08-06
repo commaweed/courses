@@ -250,8 +250,88 @@ yum upgrade {package}
 :set textwidth=120
 
 # ========================================
+# linux ls colors
+# ========================================
+
+# show current colors
+dircolors --print-database
+
+# can either plain in ~/.dir_colors or add export LS_COLORS to .bashrc
+export LS_COLORS="key=effect;color:key=effect;color"
+
+# keys
+no  normal
+fi  file
+di  dir
+ln  symbolic link
+pi  fifo pipe
+do  door
+bd  block device
+cd  character device
+or  orphan (symbolic link pertaining to a non-existent file)
+so  socket
+su  file that is setuid (u+s) 
+sg  file that is setgid (g+s)
+tw  directory that is other-writable - sticky bit like /tmp - (+t, o+w)
+ow  other-writeable directory (o+w)
+st  directory with the sticky bit set (+t)
+ex  executable file
+mi  missing symbolic link
+lc  left opening terminal code
+rc  right opening terminal code
+ec  endcode; end non-filename exists
+
+# effects
+00  None
+01  Bold
+04  Underlined
+05  Flashing Text
+07  Reversed
+08  Concealed
+
+# ANSI colors
+30  Black (or blue)
+31  Red
+33  Yellow (or Orange)
+34  Blue
+35  Purple
+36  Cyan (or Black)
+37  White (or lt. grey)
+
+# Extra colors
+90  Dark Grey
+91  Light Red
+92  Light Green
+93  Yelow
+94  Light Blue
+95  Light Purple
+96  Turquoise (or Blue)
+97  White
+
+# backgrounds
+40  Black
+41  Red
+42  Green
+43  Yelow (or Orange)
+44  Blue
+45  Purple
+46  Cyan (or Black)
+47  White
+
+# extra backgrounds
+100  Dark Grey
+101  Light Red
+102  Light Green
+103  Yelow
+104  Light Blue
+105  Light Purple
+106  Turquoise 
+
+# ========================================
 # other
 # ========================================
 
 # fonts
 fc-cache -f -v
+
+
