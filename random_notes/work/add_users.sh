@@ -1,3 +1,5 @@
+#!/bin/bash
+
 users=("aaaaaa", "bbbbbb")
 uids=("1", "2")
 
