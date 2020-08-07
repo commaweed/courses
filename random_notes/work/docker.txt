@@ -1,9 +1,11 @@
-# start and check service status
+# start and check service status (most often docker needs to run as root - use sudo)
 sudo systemctl start docker
 sudo systemctl status docker
+$ docker --version
 
 # pull from repo
 $ docker pull docker.repo.host/achaphi/jq:1.5-r1-0-g084d52e
+$ docker pull busybox
 
 # create
 $ docker create -v deployment-volume:/workspace --name deployment-container docker.repo.host/busybox
@@ -14,14 +16,29 @@ $ docker container run -d -p 9000:9000 -p 6379:6379 -p 6380:6380 --name my_test_
 $ docker container run -d --add-host=sp_redis:x.x.x.x -p 9000:9000 -p 6379:6379 -p 6380:6380 --name my_test_haproxy -v /mnt/haproxy:/usr/local/etc/haproxy:ro haproxy:1.7.9-alpine
 $ docker run -it --rm --name haproy-syntax-check haproxy:1.7.9-alpine -c -f /usr/local/etc/haproxy/haproxy.cfg
 
+$ list containers
+$ docker ps -a --no-trunc
+$ docker ps -a --filter volume=deployment-volume
+
 # inspect things about all docker containers or a specific container
 $ docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}{{ .Name }}' my_test_haproxy
 $ docker inspect -f . docker.repo.host/source/build-environment
+$ docker inspect e9763f1770c1 | grep LogPath # shows where the logs are stored for the container
 $ docker container inspect my_test_haproxy
 $ docker container port my_test_haproxy
 $ docker container logs my_test_haproxy -f
-$ docker network ls
+
+# networks
+$ docker network ls --no-trunc
 $ docker network inspect 984c4e7ce1c4 sh
+
+# volumes
+$ docker volume ls
+$ docker volume create --name some_name # will see names added to /var/lib/docker/volumes
+$ docker volume create --name tj_test # /var/lib/docker/volumes/tj_test/_data
+$ docker volume inspect tj_test
+$ docker inspect -f "{{ json.Mounts }}" tj_test
+$ docker volume rm tj_test
 
 # enter container (using shell)
 $ docker exec -it my_test_haproxy sh
