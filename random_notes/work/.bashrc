@@ -1,3 +1,10 @@
+# .bashrc
+
+# source global definitions
+if [ -f /etc/bashrc ] ; then
+    . /etc/bashrc
+fi
+
 #eval "$(ssh-agent)" > /dev/null
 #ssh-add
 
@@ -6,17 +13,17 @@
 # =====================================
 
 red='\[\e[0;91m\]'
-RED='\[\e[0;91m\]'
-blue='\[\e[0;91m\]'
-BLUE='\[\e[0;91m\]'
-darkblue='\[\e[0;91m\]'
-black='\[\e[0;91m\]'
-BLACK='\[\e[0;91m\]'
-magenta='\[\e[0;91m\]'
-MAGENTA='\[\e[0;91m\]'
-cyan='\[\e[0;91m\]'
-CYAN='\[\e[0;91m\]'
-CLEAR='\[\e[0;91m\]'
+RED='\[\e[1;91m\]'
+blue='\[\e[0;94m\]'
+BLUE='\[\e[1;94m\]'
+darkblue='\[\033[0;34m\]'
+black='\[\e[0;30m\]' # or '\[\033[0;30m\]'
+BLACK='\[\e[1;39m\]' # or '\[\033[0;39m\]'
+magenta='\[\e[0;95m\]'
+MAGENTA='\[\e[1;95m\]'
+cyan='\[\e[0;96m\]'
+CYAN='\[\e[1;96m\]'
+CLEAR='\[\033[0m\]'
 
 # =====================================
 # prompt 
@@ -28,6 +35,9 @@ export PS1="\n${red}\[\u\]${darkblue}@${black}\[\h\][${HOSTIP}] ${BLACK}\$(pwd)$
 # =====================================
 # environment 
 # =====================================
+
+# personal
+MY_HOME=/home/tjjenk2
 
 # curl NSSDB
 export SSL_DIR=/home/tjjenk2/.pki/nssdb
@@ -112,11 +122,17 @@ alias psg="ps -ef | grep \!* | more"
 # git
 
 alias gitwho="git for-each-ref --format='%(authorname) %09 %(refname)' --sort=authorname"
+alias s='git status'
 
 # tunnels
 alias tunnel_es2='ssh -v -N -L 9200:master.host:9200 tjjenk2@master.host'
 alias tunnel_webscv_debug='ssh -v -N -L 8443:web.host:7443 tjjenk2@web.host'
 alias tunnel_setup="ssh -f -N -D 5055 host1 & ssh -f -N -D 5056 host2 & ssh -F -N -D 5057 host3"
+alias tunnel_es6_foxyproxy="ssh -v -N -L 9250:es1:9250 tjjenk2@es1"
+alias tnnel_sql="ssh -v -N -L 3306:mysql:3306 tjjenk2@mysql"
+
+# npm
+alias npmll='npm list --depth=0'
 
 # =====================================
 # cleanup 
