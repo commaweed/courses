@@ -5,6 +5,15 @@ sudo systemctl status docker
 # pull from repo
 $ docker pull docker.repo.host/achaphi/jq:1.5-r1-0-g084d52e
 
+# create
+$ docker create -v deployment-volume:/workspace --name deployment-container docker.repo.host/busybox
+$ docker cp . deployment-container:/workspace
+
+# launch container or do things with container
+$ docker container run -d -p 9000:9000 -p 6379:6379 -p 6380:6380 --name my_test_haproxy -v /mnt/haproxy:/usr/local/etc/haproxy:ro haproxy:1.7.9-alpine
+$ docker container run -d --add-host=sp_redis:x.x.x.x -p 9000:9000 -p 6379:6379 -p 6380:6380 --name my_test_haproxy -v /mnt/haproxy:/usr/local/etc/haproxy:ro haproxy:1.7.9-alpine
+$ docker run -it --rm --name haproy-syntax-check haproxy:1.7.9-alpine -c -f /usr/local/etc/haproxy/haproxy.cfg
+
 # inspect things about all docker containers or a specific container
 $ docker inspect --format '{{ .NetworkSettings.Networks.bridge.IPAddress }}{{ .Name }}' my_test_haproxy
 $ docker inspect -f . docker.repo.host/source/build-environment
@@ -14,16 +23,12 @@ $ docker container logs my_test_haproxy -f
 $ docker network ls
 $ docker network inspect 984c4e7ce1c4 sh
 
-# launch container or do things with container
-$ docker container run -d -p 9000:9000 -p 6379:6379 -p 6380:6380 --name my_test_haproxy -v /mnt/haproxy:/usr/local/etc/haproxy:ro haproxy:1.7.9-alpine
-$ docker container run -d --add-host=sp_redis:x.x.x.x -p 9000:9000 -p 6379:6379 -p 6380:6380 --name my_test_haproxy -v /mnt/haproxy:/usr/local/etc/haproxy:ro haproxy:1.7.9-alpine
-$ docker run -it --rm --name haproy-syntax-check haproxy:1.7.9-alpine -c -f /usr/local/etc/haproxy/haproxy.cfg
-
 # enter container (using shell)
 $ docker exec -it my_test_haproxy sh
 
 # remove / prune / kill
 $ docker rm -f 15d24435...
+$ docker rm -v deployment-container
 $ docker cleanup
 $ docker kill -s HUP my_test_haproxy
 
@@ -31,5 +36,3 @@ $ docker kill -s HUP my_test_haproxy
 $ docker container ps -a
 $ docker container stop 93eeab20d4b
 $ docker container start 93eeab20d4b
-
-
