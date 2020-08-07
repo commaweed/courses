@@ -1,0 +1,58 @@
+# how does ssh work (secure shell due to private/public key encryption)
+
+- client-server model:
+    * ssh verification to a server depends upon a challenge-response authentication
+    * a connection is made over tcp/ip network socket (default server listen port = 22)
+    * the server process is sshd and it must be running (usually auto-start as a service)
+    * the client process is ssh
+    * upon the initial syn/ack three-way connection handshake, both client and server will negotiate a session ID
+    * session ID is known to both client and server
+- client:
+    * when ssh connects to a server notifying it that it wants to use SSH key authentication, it gives it the user_name
+    * by default, it will use the current user ,but it can use another user by prefixing the host address (e.g. ssh user@host)
+- server:
+    * the ssh daemon (sshd) on the server will get the request with the user_name
+    * looks for public key in /home/user_name/.ssh/authorized_keys
+    * generates a random string that is encrypted with the user's public key
+    * sends the encrypted response back to the client as a challenge
+- client:
+    * client receives response
+    * decrypts the challenge using it's private key that is located in ~/.ssh/id_rsa
+    * if the private key has a passphrase, they'll have to enter it
+    * it then constructs a key response by combining the decrypted server response with the previously negotiated session ID
+    * it generates an MD5 hash of this combined value and sends it back to the server
+- server:
+    * the server already had the original message and the session ID
+    * it combines the values and does an MD5 hash
+    * the client value is compared to the server value
+    * if they match, it grants access to the system
+
+# purpose of ssh-agent
+
+- ssh-agent simplifies an ssh client-server connection by creating a network socket that listens for SSH connections
+- without it, you will be prompted to enter the passphrase every time you use ssh to connect to a remote host
+- everyone who is able to connect to this socket also has access to the ssh-agent, so permissions are set on it to prevent others from accessing it
+- in linux/unix, a socket behaves like a file and it has a default location
+    * my guess is that this location is done via the /etc/X11/xinit/xinitrc-common file 
+- ssh-agent is a process that needs to be started 
+- private keys need to be added to it manually
+
+# ways to start ssh-agent
+
+- two environment variables associated to it are:  SSH_AGENT_PID and SSH_AUTH_SOCK
+- you can have the ssh-agent create a subprocess which inherits the SSH_AUTH_SOCK environment variable
+
+1.  manually
+    a.  start it in the background:  eval $(ssh-agent)
+        alternate to sends output to STDOUT:  eval $(ssh-agent -s)
+    b.  add you private key using default location (i.e. ~/.ssh/id_rsa):  ssh-add
+    c.  or add your private key by specifying path:  ssh-add /some/path/to/id_rsa
+2.  when you log in
+    a.  someone online said you can add this to the end of a .xsession fiel (in home directory I presume):  ssh-agent gnome-session
+    b.  this will cause the agent to start, create a socket, set the environment variables, the start up the gnome session;
+        that way all programs that run in Gnome will have access to the agent
+    c.  I notice references to it in
+        /etc/X11/xinit/XClients
+        /etc/X11/xinit/XSession
+        /etc/X11/xinit/xinitrc-common
+        
