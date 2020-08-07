@@ -82,8 +82,9 @@ cat /etc/centos-release
 # identifying services that start at each runlevel
 /sbin/chkconfig --list
 
+# ========================================
 # centos 7 services (systemctl)
-# =============================
+# ========================================
 
 # service directory
 /etc/systemd/system # e.g. /etc/systemd/multi-user.target.wants/rndg.service -> /user/lib/systemd/system/rngc.service
@@ -369,5 +370,8 @@ ec  endcode; end non-filename exists
 
 # fonts
 fc-cache -f -v
+
+# process tree
+pstree -p
 
 
