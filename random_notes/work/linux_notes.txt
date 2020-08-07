@@ -52,6 +52,7 @@ INGEST_PID=`(jsp | grep -i "${INGEST_MAIN_CLASS}" | awk '{print $1}')`
 awk -F '[\[]+|[\]]' '{print $2}' file.txt | sort | uniq -c
 cat file.csv | tail -n +2 | awk -F "," '{print $3,$4,$9,$5}' | awk 'NF==4' | awk '{printf "%05i.$05i.%03i..%05i\n", $1,$2,$4,$3}' | sort -s | uniq -u
 cat file.csv | tail -n +2 | awk -F "," '{print $3,$4,$9,$5}' | awk 'NF==4' | awk 'length($3)!=5' | wc -l
+cat file.csv | tail -n +2 | awk -F "," '{print $3,$4,$9,$5}' | awk '{print length, $0}' | sort -n -s | cut -d" " -f2- | awk 'NF>3' } sort | uniq -u | awk -F " " 'length($1)==5 && length($2)==5 && length($3)==5' | wc -l
 
 # ========================================
 # memory / host
@@ -99,15 +100,50 @@ systemctl status application.service
 systemctl is-active application-service
 systemctl is-enabled application.service
 systemctl is-failed application.service
+systemctl cat sshd.service # display a unit file (in this case the ssh deamon)
+
+# displaying service dependencies
+systemctl list-dependencies sshd.service
+
+# display a unit file
+systemctl cat sshd.service
+
+# checking unit properties
+systemctl show sshd.service
+
+# edit a unit file (first one is snippet)
+sudo systemctl edit application.service
+sudo systemctl edit --full application.service
+
+# view a unit file
+cat /usr/lib/systemd/system/rngd.service
+
+# display list of services that are running
+systemctl -t service
+# LOAD - reflects whether the unit definition was properly loaded
+# ACTIVE - the high-level unit activation state, i.e. generalization of SUB
+# SUB - the low-level unit activation state, values depend on unit type
+
+# display list of all services (or current ones)
+systemctl list-unit-files -t service
+systemctl list-unit-files | grep xrdp
 systemctl list-units
 systemctl list-units --all --state=inactive # not running
 systemctl list-units --all --state=active # running
 systemctl list-units --all --state=service
-systemctl cat sshd.service # display a unit file (in this case the ssh deamon)
-systemctl list-dependencies sshd.service
-systemctl show sshd.service
-sudo systemctl edit application.service # snippet
-sudo systemctl edit --full application.service
+
+# SysV services are controlled by chkconfig
+chkconfig --list
+chkconfig netconsole off
+
+# enable service on boot
+systemctl enable docker.service
+systemctl status docker.servfice | grep loaded
+
+# stop and turn off auto-start setting (postfix is the service name)
+systemctl stop postfix
+systemctl disable postfix
+rm '/etc/systemd/system/multi-user.target.wants/postfix.service'
 
 # ========================================
 # rpm  
