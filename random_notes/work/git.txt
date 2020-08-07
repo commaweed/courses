@@ -1,0 +1,207 @@
+# checkout from repo
+git clone user@host:/path/to/repo
+
+# workflow - local repo consists of three trees
+# 1.  working directory - holds the actual files
+# 2.  Index - staging area
+# 3.  HEAD - points to the last commit
+
+# add to index - stage
+1.  single file - git add <filename>
+2.  all changes files - git add * (git add .)
+3.  interactive adding - git add -i
+
+# commit to HEAD
+git commit -m "blah blah"
+
+# list removes for a git repo
+git remote -v
+
+# configure another remote for a git repo
+git remote add <some_name> ssh://git-repo-url/somerepository.git/
+
+# change remote origin your local branch is currently tracking
+git remote set-url origin git@host:path/repo.git
+git branch branch_name -u new_remote/branch_name
+
+# find out which branch a local branch is tracking
+git branch -vv
+
+# show remote info
+git remote show origin
+
+# show which files changed for a particular commit
+git show --name-status commit_hash
+
+# show url
+git ls-remote
+git remote -v
+
+# can push to multiple remotes
+git push origin branch_name
+git push -u origin master
+git push -u origin local_branch_name:remote_branch_name
+
+# rename remote
+git remote rename blah
+
+# clean local
+git rm --cached -r .
+
+# remove a remote branch
+git remote rm branch_name
+
+# delete a local branch
+git branch -D branch_name
+
+# send changes to remote repo
+git push origin branch_name 
+git push origin --delete branch_name
+git push origin :branch_name
+git push -n # dry-run (doesn't actually do it)
+
+# your local does not yet exist in remote (run this before sending changes)
+git remote add origin server_address
+
+# create a branch off of another one
+git checkout -b branch_name
+# -or-
+git branch branch_name && git checkout branch_name
+
+# switching to an existing branch
+git checkout branch_name
+
+# push to a remote branch (use -u to associate to remote and so you don't have to type this everytime you push)
+git push -u origin branch_name
+
+# listing local branches
+git branch
+
+# listing remote branches
+git branch -r
+
+# list all branches
+git branch -a
+
+# update and merge
+1.  to update local repo to newest commit (does a fetach and merge of remote changes)
+    git pull
+2.  to merge to another branch
+    git merge branch_name
+3.  to mark diff-changes files as "merged"
+    git add file_name && git commit -m "blah blah"
+    -or-
+    git commit -am "blah blah"
+    
+# to preview changes
+git diff <source_branch> <target_branch>
+git diff --name-status branch_name..target_branch_name
+git diff --name-status HEAD~16
+git diff --name-status origin/private/branch
+    
+# tagging
+git tag 1.0.0 <commit-hash>
+git tag -a v1.0 -m "blah blah"
+git tag -d <tag_name> #delete
+
+# push tags to upstream server
+git push --tags --set-upstream origin local_branch_name
+git push --tags origin local_branch_name
+
+# make sure a tag exists locally
+git fetch --all --tags --prune
+
+# checkout tag
+git checkout tags/<tag_name> -b <branch_name>
+
+# see a list of all tags
+git tag
+git tag --list "v-*"
+
+# log
+git log --help
+git log --author=bob
+git log --pretty=oneline
+git log --graph --oneline --decorate --all
+git log --name-status
+
+# show log for what was done to local branch
+git reflog
+git reflog show master
+
+# discard local changes
+1.  git checkout -- file_name
+2.  git fetch origin
+    git reset --hard origin/branch_name 
+3.  git checkout -- . # all files
+4.  another way to restore a file
+    git reset HEAD path/to/file
+    git checkout -- path/to/file
+5.  go back to last commit
+    git reset HEAD~
+6.  undo a commit
+    git revert commit_hash
+    git revert x y
+    git rever x..y
+7.  git reset --soft HEAD^
+    git reset HEAD path/to/unwanted/file
+    git commit -c ORIG_HEAD
+
+# to change message of last commit
+git commit --amend
+
+# to integrate changes from one branch into another
+1.  merge - non-destructive operation; existing branches are not changes in any way
+          - avoids potential pitfalls of rebasing
+          - but, means feature branch will have an extra merge commit everytime you include upstream changes (bad if master branch is very active)
+    git checkout feature
+    git merge master
+  
+2.  rebase - moves the entire branch ontop of the other (feature ontop of master)
+           - does not add the a merge commit; insteads re-writes the project history by creating brand-new commits for each commit in the original branch
+    git checkout feature
+    git rebase master
+
+# what does git pull do
+git fetch && git merge
+
+# what does git pull --rebase do
+git fetch && git rebase # sort of
+# if you haven't made any changes to your branch, it does same as "git pull"
+# if you made changes to your branch, regular "git pull" creates the extra merge request (makes history ugly)
+# if you made changes to your branch, rebase option will put your commits as new ones ontop of the branch you are merging into
+# if you have long-term changes, it might be better to just use merge and not rebase
+# cleaner to use rebase if you have small changes
+
+# when you do a "git pull", you should see a "Fast-forward", which means your local branch has not diverged from remote branch (i.e. no local commits)
+# if your "git pull" doesn't include "Fast-forward", it means a merge commit has been created, so you should do
+    git reset --hard HEAD~1
+    git pull --rebase
+    
+# git interactive (squash commits)
+git rebase -i branch
+git push -f # force the push if remote already exists
+
+# clean non-tracked files (f force, x remove ignored files, n dry-run, d directories)
+git clean -f
+git clean -xfn
+git clean -fd
+
+# to determine when a file was last modified
+git log -l --format="%ad" -- path/to/file
+
+# stash
+git stash list
+git stash clear
+git stash drop <stash_id>
+git stash .
+git stash apply
+git stash pop
+
+# config
+git config --global user.name "blah blah"
+git config --list
+
+# take a single commit and put it on top of your current branch
+git cherry-pick commit_hash
+
