@@ -44,7 +44,6 @@ x < y # same as x.__lt__(y)
 
 ## Numbers
 
-| ---- | ---- |
 | integral | non-integral |
 | Integers | Floats (c doubles) |
 | Booleans | Complex |
@@ -53,7 +52,6 @@ x < y # same as x.__lt__(y)
 
 ## Collections
 
-| ---- | ---- | ---- |
 | Sequences | Sets | Mappings |
 | Mutable | Immutable | Mutable | Immutable |
 | Lists | Tuples | Sets | Frozen Sets | Dictionaries |
@@ -62,7 +60,6 @@ x < y # same as x.__lt__(y)
 
 * anything you can invoke
 
-| ---- |
 | User-Defined Functions |
 | Generators |
 | Classes |
@@ -73,7 +70,6 @@ x < y # same as x.__lt__(y)
 
 ## Singletons
 
-| ---- |
 | None |
 | Not Implemented |
 | Ellipsis Operator (...) |
@@ -82,7 +78,6 @@ x < y # same as x.__lt__(y)
 
 ### Python Program
 
-| ---- |
 | phyical lines of code | end with a physical newline character|
 | logical lines of code | end with a logical NEWLINE token|
 | tokenized |
