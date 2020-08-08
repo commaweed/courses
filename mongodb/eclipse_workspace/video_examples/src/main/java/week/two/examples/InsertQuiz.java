@@ -9,8 +9,8 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 
 public class InsertQuiz {
-	public static void main(String[] args) throws UnknownHostException {
-		MongoClient client = new MongoClient();
+    public static void main(String[] args) throws UnknownHostException {
+        MongoClient client = new MongoClient();
         DB db = client.getDB("school");
         DBCollection people = db.getCollection("people");
         
@@ -30,5 +30,5 @@ public class InsertQuiz {
 //        { "_id" : ObjectId("52dcda18e4b02592780364b2"), "name" : "Andrew Erlichson", "company" : "10gen" }
 //        { "_id" : ObjectId("52dcda18e4b02592780364b3"), "name" : "Andrew Erlichson", "company" : "10gen" }
 
-	}
+    }
 }

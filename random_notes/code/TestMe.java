@@ -62,7 +62,7 @@ public class TestMe {
          .collect(Collectors.toList());
 
       System.out.println(uniqueNonNullThings);
-		// output:  [(1, thingOne), (2, thingTwo), (3, thingThree)]
+        // output:  [(1, thingOne), (2, thingTwo), (3, thingThree)]
    }
 }
 

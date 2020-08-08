@@ -11,41 +11,41 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 
 public class FindTest {
-	public static void main(String[] args) throws UnknownHostException {
-		MongoClient client = new MongoClient();
-		DB db = client.getDB("course");
-		DBCollection collection =  db.getCollection("findTest");
-		
-		//ensure it is empty
-		collection.drop();
-		
-		//populate
-		for (int i = 0; i < 10; i++) {
-			collection.insert(new BasicDBObject("x", new Random().nextInt(100)));
-		}
-		
-		
-		System.out.println("Find One:");
-		DBObject one = collection.findOne();
-		System.out.println(one);
-		
-		//with 10 documents, server cursor will end; but with large collections, definitely close
-		System.out.println("\nFind all: ");
-		DBCursor cursor = collection.find();
-		try {
-			while (cursor.hasNext()) {
-				DBObject nextDoc = cursor.next();
-				System.out.println(nextDoc);
-			}
-		} finally {
-			cursor.close();
-		}
-		
-		
-		System.out.println("\nCount:");
-		long count = collection.count();
-		System.out.println(count);
-	}
+    public static void main(String[] args) throws UnknownHostException {
+        MongoClient client = new MongoClient();
+        DB db = client.getDB("course");
+        DBCollection collection =  db.getCollection("findTest");
+        
+        //ensure it is empty
+        collection.drop();
+        
+        //populate
+        for (int i = 0; i < 10; i++) {
+            collection.insert(new BasicDBObject("x", new Random().nextInt(100)));
+        }
+        
+        
+        System.out.println("Find One:");
+        DBObject one = collection.findOne();
+        System.out.println(one);
+        
+        //with 10 documents, server cursor will end; but with large collections, definitely close
+        System.out.println("\nFind all: ");
+        DBCursor cursor = collection.find();
+        try {
+            while (cursor.hasNext()) {
+                DBObject nextDoc = cursor.next();
+                System.out.println(nextDoc);
+            }
+        } finally {
+            cursor.close();
+        }
+        
+        
+        System.out.println("\nCount:");
+        long count = collection.count();
+        System.out.println(count);
+    }
 }
 
 /*
