@@ -106,6 +106,8 @@
 5.  restart the browser
 
 ### angular notes
+
+```javascript
 var handleToYourService = angular.element("#someId").injector().get('YourService');
 var scopeOfMstRecentSelectedItem = angular.element($0).scope();
 var handleToYourController = angular.element($0).controller(); controller.constructor.name;
@@ -114,3 +116,4 @@ $($0).scope.someScopeValue = blah; $($0).scope().$digst(); // used to re-evaluat
 
 // if you want to remove angular scope circular reference stuff, you can omit the angular variables
 var newScope = _.omit(scopeOfMostRecentSelectedItem, function(value, key, object) { return key.startsWith("$") || key === "this" });
+```
