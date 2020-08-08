@@ -54,7 +54,7 @@ x < y # same as x.__lt__(y)
 ## Collections
 
 | Sequences | Sets | Mappings |
-| ---- | ---- | ---- |
+| ---- | ---- | ---- | ---- | ---- |
 | Mutable | Immutable | Mutable | Immutable |
 | Lists | Tuples | Sets | Frozen Sets | Dictionaries |
 
@@ -62,7 +62,7 @@ x < y # same as x.__lt__(y)
 
 * anything you can invoke
 
-| <!-- --> |
+| Type |
 | ---- |
 | User-Defined Functions |
 | Generators |
@@ -74,7 +74,7 @@ x < y # same as x.__lt__(y)
 
 ## Singletons
 
-| <!-- --> |
+| Type |
 | ---- |
 | None |
 | Not Implemented |
@@ -84,7 +84,7 @@ x < y # same as x.__lt__(y)
 
 ### Python Program
 
-| <!-- --> |
+| Type |
 | ---- |
 | phyical lines of code | end with a physical newline character|
 | logical lines of code | end with a logical NEWLINE token|
