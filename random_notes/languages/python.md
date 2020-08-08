@@ -53,16 +53,16 @@ x < y # same as x.__lt__(y)
 
 ## Collections
 
-| Sequences | Sets | Mappings |
+| Sequences |  | Sets || SetsMappings|
 | ---- | ---- | ---- | ---- | ---- |
-| Mutable | Immutable | Mutable | Immutable |
+| Mutable | Immutable | Mutable | Immutable | Mutable |
 | Lists | Tuples | Sets | Frozen Sets | Dictionaries |
 
 ## Callables
 
 * anything you can invoke
 
-| Type |
+| :Type |
 | ---- |
 | User-Defined Functions |
 | Generators |
@@ -74,7 +74,7 @@ x < y # same as x.__lt__(y)
 
 ## Singletons
 
-| Type |
+| :Type |
 | ---- |
 | None |
 | Not Implemented |
@@ -84,7 +84,7 @@ x < y # same as x.__lt__(y)
 
 ### Python Program
 
-| Type |
+| :Type |
 | ---- |
 | phyical lines of code | end with a physical newline character|
 | logical lines of code | end with a logical NEWLINE token|
