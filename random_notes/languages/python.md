@@ -79,7 +79,7 @@ open_account
 ```python
 # multiline strings are not comments, but can be used as such (e.g. docstrings) to define function/method blocks
 '''This is a multiline string
-	all whitespace including newline and tab are preserved as written.
+    all whitespace including newline and tab are preserved as written.
 '''
 
 a = """
@@ -98,7 +98,7 @@ Can also use double quotes
 
 * anything you can invoke
 
-| :Type |
+| Type |
 | ---- |
 | User-Defined Functions |
 | Generators |
@@ -110,7 +110,7 @@ Can also use double quotes
 
 ## Singletons
 
-| :Type |
+| Type |
 | ---- |
 | None |
 | Not Implemented |
@@ -120,7 +120,7 @@ Can also use double quotes
 
 ### Python Program
 
-| :Type |
+| Type |
 | ---- |
 | phyical lines of code | end with a physical newline character|
 | logical lines of code | end with a logical NEWLINE token|
@@ -136,32 +136,32 @@ Can also use double quotes
 ```python
 # list literals: []
 [ 1, 2,
-	3
+    3
 ]
 
 # tuple literals: ()
 ( 
     1,
-	2,
-	3
+    2,
+    3
 )
 # dictionary literals: {}
-{ 	"name":"value", 
-	'name2':'value1'
+{   "name":"value", 
+    'name2':'value1'
 }
 
 # set literals: {}
 {
-	"1"
-	, "2"
+    "1"
+    , "2"
 }
 
 # function arguments / parameters
 def my_func(a,
-	b, c):
-	print(a,b,c)
+    b, c):
+    print(a,b,c)
 my_func(10, #comment
-	20, 30)
+    20, 30)
 ```
 
 ### explicit multiline statements
@@ -171,8 +171,8 @@ my_func(10, #comment
 # multiline statements are not implicitly converted to a single logical line
 # WARNING: cannot put comments inside the statement; must be above or below the entire statement
 if a \
-	and b \
-	and c:
+    and b \
+    and c:
 ```
 ## Conditionals
 
@@ -180,11 +180,11 @@ if a \
 # if/ elif / else
 a = 6
 if a < 5:
-	print('a < 5')
+    print('a < 5')
 elif a < 10:
-	print ('5 <= a < 10')
+    print ('5 <= a < 10')
 else:
-	print('a >= 5')
+    print('a >= 5')
 
 # conditional expression (ternary) - X if (condition is true) else Y - cannot handle blocks (singleline only)
 b = 'a < 5' if a < 5 else 'a >= 5'
@@ -206,12 +206,12 @@ print (math.exp(1))
 
 # define a function / call a function
 def func_1(a, b):
-	print("running func_1: {}".format(a * b))
+    print("running func_1: {}".format(a * b))
 func_1(4, 5)
 
 # interpretter will ignore declared types (just for readability)
 def func_2(a: int, b: int):
-	return a * b
+    return a * b
 func_2('a', 3) # 'aaa'
 func_2([1, 2], 3)  # [1, 2, 1, 2, 1, 2]
 func_2('a', 'b') # doesn't work because multiplication doesn't exist for strings
