@@ -1,0 +1,14 @@
+<!-- template for tj-typeahead directive -->
+<div>
+  <h3>The directive template results</h3>
+
+  <!-- Even though this directive has tjController parent scope, because I 
+       declared an isolated scope for the directive, it will use those
+       variable names -->
+  <ul ng-repeat="person in people">
+    <li>
+      row: {{ person.id }}&nbsp;{{ person.name }}
+    </li>
+  </ul>
+</div>
+

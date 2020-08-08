@@ -1,0 +1,42 @@
+<!--
+https://plnkr.co/edit/GczH9qrLZWyA4Zzt37On?p=preview
+-->
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <!--<link href="style.css" rel="stylesheet" />-->
+  </head>
+
+  <body ng-app="tjApp">
+
+    <div ng-controller="tjController">
+
+        <!-- ng-repeat uses tjController scope -->
+        <h3>Demonstrating ng-repeat (not using a directive)</h3>
+        <ul ng-repeat="person in results">
+          <li>
+            row: {{ person.id }}&nbsp;{{ person.name }}
+          </li>
+        </ul>
+
+        <!-- my directive uses tjController scope (contains same code as above) -->
+        <div tj-typeahead people="results"></div>
+    </div>
+
+    <!-- placing jquery script above angular means angular gets full JQuery versus JQlite -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.0/angular.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- my scripts: order matters -->
+    <script src="module-tj-app.js"></script>
+    <script src="factory-tj-app.js"></script>
+    <script src="controller-tj-app.js"></script>
+    <script src="directive-tj-typeahead.js"></script>
+
+  </body>
+
+</html>
+
