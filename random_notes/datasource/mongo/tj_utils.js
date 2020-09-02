@@ -59,8 +59,20 @@ var tj={};
       return result;
    }
    
+   function getRoles(user, useRegex) {
+      var id = user;
+      if (useRegex === true) {
+         id = { $regex: ".*" + user + ".*", $options:"i" };
+      }
+      
+      var roles = db.roles.find( { _id: id } );
+      return roles ? roles.toArray() : "No user roles exist for user [" + user + "]";
+   }
+   
    _.extend(tj, {
       'getSource': getSource,
-      'getLayout': getLayout
-      'printSource': function printSource(id) { printjson(getSource(id)); }
+      'getRoles': getRoles,
+      'getLayout': getLayout,
+      'printSource': function printSource(id) { printjson(getSource(id)); },
+      'printRoles': function printRoles(user) { printjson(getRoles(user, true)); }
 })(tj);
