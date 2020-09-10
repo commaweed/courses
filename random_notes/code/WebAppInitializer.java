@@ -1,6 +1,17 @@
 /**
 * Servlet 3.0 engine allows us to replace web.xml with this file (i.e. java configuration).
 * AbstractAnnotationConfigDispatcherServletInitializer contains boiler plate code that simulates Spring dispatcher servlet creation in web.xml
+* <pre>
+* Directory structure:
+* business
+* config
+* components
+*    controllers
+*    repositories
+*    services
+*       security
+* exception
+* </pre>
 */
 public class WebAppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
 
