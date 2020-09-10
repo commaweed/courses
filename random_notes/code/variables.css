@@ -1,3 +1,12 @@
+/*
+to use:
+   - add the following to the *.scss that uses it
+      @import '../../variables.css'
+   - ensure to use correct relative path
+   - then in the file
+      background-color: var(--varName);
+
+*/
 :root {
   --font-size-sm: 10px;
   --font-size-md: 12px;
