@@ -2,4 +2,7 @@
   --font-size-sm: 10px;
   --font-size-md: 12px;
   --font-size-lg: 18px;
+  
+  /* these were in colors.css */
+  --disabledColor: fade(var(--darkBlack), 0.3);
 }
