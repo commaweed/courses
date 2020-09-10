@@ -46,3 +46,16 @@ class MainPage extends Component {
     }
 
 }
+
+/*
+SearchForm/index.js:
+
+export default connect((store) => {
+    return {
+        constants: store.constantsStore.constants,
+        fetchingConstants: store.constantsStore.fetching,
+        fetchingQueryResults: store.searchFormStore.fetching,
+        drilldownQuery: store.drilldownQueryStore.drilldownQuery
+    }
+}) (Form.create()(CSSModules(SearchForm, styles)));
+*/
