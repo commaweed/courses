@@ -11,6 +11,22 @@
 *    services
 *       security
 * exception
+* ...
+* webapp
+*    resources
+*       iconfont
+*       images
+*       blah.xml
+*    WEB-INF
+*       views
+*          error
+*          templates
+*          test.jsp
+*          tiles
+*          tiles.xm
+*       web.xml
+*       xsl/xxEntry.xsl
+*      
 * </pre>
 */
 public class WebAppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
