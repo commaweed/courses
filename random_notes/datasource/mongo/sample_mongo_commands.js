@@ -13,6 +13,7 @@ db.sources.aggregate([{ $match: { "systemName":"some_name"}}, { $group: { _id:"$
 db.sources.find({ "template.vals": { $elemMatch: { val: { $ne:"" } }} }, { name:1, template.1 }).limit(10).pretty();
 db.sources.find({ "name": { $regex:/travis/i }}, { name:1, action:1 }).pretty();
 db.sources.find({ "name": { $regex:/travis/i }}, { fields:0 }).pretty();
+db.sources.find({ "model.value": { $elemMatch: { value: { $ne:"" } }} }, { name:1, model:1}).limit(10).pretty();
 
 db.queries.find( { _id:ObjectId("xxxx") }, { queryName:1, "source.uid":1 }).pretty();
 db.queries.find({ "some.id":"xxx", flows: { $elemMatch: { status: "DONE" }}}, { "flow.status":1 }).pretty();
