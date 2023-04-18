@@ -202,3 +202,5 @@ db.sources.find(
   { name:1, status:1, "modifiedBy": { $slice:1 }}
 );
 
+# find who last modified source (top element)
+db.sources.find({_id: { $in: [ ObjectId('xxx'), ObjectId('yyy') ] }}, {name:1, status:1, "modifiedBy": {$slice:1}});
