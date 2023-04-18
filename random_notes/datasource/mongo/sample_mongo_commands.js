@@ -1,6 +1,6 @@
 db.auth('user', 'password');
 
-db.getCollectionNames().filter(funct (c) { return .indexOf('filter_here') > 0; });
+db.getCollectionNames().filter(function (c) { return .indexOf('filter_here') > 0; });
 
 db.queries.find( { "identity.uid":"tjjenk2", flows: } $elemMatch: {status: "COMPLETED" }}}, { "flows.status":1}).pretty();
 
@@ -11,8 +11,14 @@ db.sources.find({ "systemName": { $regex:/tjjenk2/i}}, { fields:0 }).pretty();
 db.sources.aggregate([{ $match: { "systemName":"some_name"}}, { $group: { _id:"$systemName", total: { $sum:{$size:"$fields" }}}}]);
 
 db.sources.find({ "template.vals": { $elemMatch: { val: { $ne:"" } }} }, { name:1, template.1 }).limit(10).pretty();
+db.sources.find({ "name": { $regex:/travis/i }}, { name:1, action:1 }).pretty();
+db.sources.find({ "name": { $regex:/travis/i }}, { fields:0 }).pretty();
 
 db.queries.find( { _id:ObjectId("xxxx") }, { queryName:1, "source.uid":1 }).pretty();
+db.queries.find({ "some.id":"xxx", flows: { $elemMatch: { status: "DONE" }}}, { "flow.status":1 }).pretty();
+
+# connectivity
+/user/bin/mongo --ssl x.x.x.x:xxxx/dbname --shell --sslPEMKeyFile /etc/pki/identity.pem --sslAllowInvalidHostNames --sslCAFile /etc/pki/trust.crt
 
 # how to fake mongo into writing to a file
 /usr/bin/mongo --ssl x.x.x.x:xxxx/dbname --sslPEMKeyFile /etc/pki/private/identity.pem --sslAllowInvalidHostNames --sslCAFile /etc/pki/public/trust.crt << EOF > script.out
@@ -20,6 +26,8 @@ use dbname
 db.auth('user', 'password')
 db.queries.find({ status:"COMPLETED" }, { name:1, template:1, status:1 }).pretty()
 EOF
+
+db.sources.aggregate([{ $match: { "name":"someName" }}, {$group:{_id:"$name", total:{$sum:{$size:"$fields"}}}}]);
 
 # a lookup example
 db.sources.aggregate([
